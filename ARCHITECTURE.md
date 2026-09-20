@@ -1,0 +1,407 @@
+# Architecture Guide
+
+The decisions this project is built on, and why. Written before the code so the
+code can be checked against it.
+
+---
+
+## 1. Brief and constraints
+
+Product list + detail, from two S3 endpoints. Graded on: application structure,
+MVVM or VIPER, performance, image cache, exception handling, offline/caching
+(Core Data), detail screen with large image + full title + description, unit
+tests. **No third-party libraries.**
+
+Self-imposed: 5 days, iOS 17+, Swift 5 language mode.
+
+### Scope decision: three presentation stacks, one core
+
+| | MVVM-C · UIKit | MVVM-C · SwiftUI | VIPER · UIKit |
+|---|---|---|---|
+| **primary** | ✅ | | |
+
+The brief says "MVVM **or** VIPER". Building both is not indecision — it is the
+proof that the Clean Architecture core is independent of what sits above it.
+Same `ProductDomain`, same `ProductRepositoryLive`, same tests; three renderers.
+`MVVM-C · UIKit` is the primary path and the one the README tells a reviewer to
+read first (it is also what the team actually ships).
+
+**VIPER + SwiftUI is deliberately excluded.** Classic VIPER binds Presenter to
+View through `protocol ProductListViewInterface: AnyObject`, held weakly. A
+SwiftUI `View` is a struct — there is no stable reference to hold. Replace the
+protocol with `@Published` state and the Presenter is a ViewModel in all but
+name; what remains is Interactor-backed MVVM, not VIPER. Selecting VIPER in the
+picker therefore locks the framework toggle to UIKit and shows the reason.
+
+---
+
+## 2. Repository shape
+
+```
+TurkcellCase.xcworkspace             ← open THIS, not the .xcodeproj
+App/                                 ← app-shaped targets ONLY
+  TurkcellCase-UnalCelik.xcodeproj
+  TurkcellCase-UnalCelik/            @main, Assets, Info.plist, entitlements
+  TurkcellCase-UnalCelikTests/
+  TurkcellCase-UnalCelikUITests/     (later: per-module demo apps live here too)
+Packages/
+  AppModules/   Package.swift · Sources/ · Tests/   ← this app's code
+  CoreKit/      Package.swift · Sources/ · Tests/   ← reusable infrastructure
+```
+
+Neither package contains the `.xcodeproj`, and the project does not contain a
+package. That matters twice over: a local Swift package may not contain the
+project that consumes it (Xcode refuses to add it), and if the package *did*
+contain `App/`, Xcode would show the same app files twice — once through the
+project tree and once through the package tree.
+
+The **workspace** is what joins them. The app target links `AppFeature` as a
+workspace-provided package product, so the pbxproj records a
+`XCSwiftPackageProductDependency` with a `productName` and no package
+reference — the same shape isowords uses.
+
+### Smaller decisions
+
+Recorded here rather than in source comments, so the code stays readable and
+the reasoning stays in one place.
+
+| Decision | Why |
+|---|---|
+| `ImagePrefetchingInterface` is separate from `ImageLoaderInterface` | a scheduling engine can be introduced later without touching every loader conformer |
+| `ImageCacheKit` is `Data`-shaped, not `UIImage`-shaped | keeps the module free of UIKit, so it tests without a simulator and serves both renderers |
+| `CachedImage` (SwiftUI) takes an injected loader rather than using `AsyncImage` | `AsyncImage` has no cache shared with the UIKit path, and third-party libraries are ruled out |
+| The VIPER Router's destination is injected, not imported | `ProductListVIPER` must not link `ProductDetailVIPER`; see §7 |
+| `ProductDetailRouter` needs no `@Dependency` | the detail screen is a leaf and navigates nowhere new |
+| Registrations are shared instances | the repository and image loader own their caches — rebuilding per resolve would drop both |
+| `DependencyEngine` is clean-room | the pattern is published; the reference implementation is copyrighted and was not copied |
+
+### Source grouping
+
+Within each package, sources are grouped by layer for navigation only:
+
+```
+Packages/AppModules/Sources/        Packages/CoreKit/Sources/
+  Application/AppFeature/             DependencyInjection/DependencyEngine/
+  Domain/ProductDomain/               Networking/NetworkingKit{,Live,Mocks}/
+  Data/ProductRepositoryLive/         Persistence/PersistenceKit{,Live,Mocks}/
+  Shared/CommonKit/ CommonUI/         ImageLoading/ImageCacheKit{,Live,Mocks}/
+  Features/ProductList/…(5)
+  Features/ProductDetail/…(5)
+```
+
+Every target carries an explicit `path:`, so the grouping folders stay folders
+and each module remains separately declared. Grouping changed no target name,
+product name, import, or dependency edge.
+
+### Why two packages and not one, or nine
+
+A **target** answers *what can import what*. A **package** answers *what ships
+and versions together*. Both give identical compile-time enforcement — the
+difference is the release boundary.
+
+The line is drawn where reuse actually is: `NetworkingKit` and `DependencyEngine`
+know nothing about products or carts and would work in any app. `ProductDomain`
+is meaningless anywhere else. Two manifests, not nine, because nine buys
+independent versioning we never use while costing atomic refactors during the
+days when these interfaces change hourly.
+
+`Packages/CoreKit` is extractable to its own repo whenever it stabilises:
+`git filter-repo --subdirectory-filter Packages/CoreKit`, then the root manifest
+changes `path:` to `url:`. One line.
+
+### Why not separate `.xcodeproj` per module
+
+Reference points checked while deciding:
+
+- **Trendyol** (245 modules): every `.xcodeproj` is **gitignored and generated**
+  by Tuist from a `Project.swift` manifest. Nobody hand-edits a pbxproj.
+- **isowords** (87 targets, 84 products): one `Package.swift`, and a single
+  `.xcodeproj` holding *only* app-shaped targets — the app, the App Clip, and
+  9 preview apps.
+
+Both are manifest-first. Tuist earns its place at 245 modules through binary
+caching and app-target definition; at our size it is a tool the reviewer would
+have to install before the project opens. SPM gets the same manifest-first
+model with zero tooling.
+
+`.xcodeproj` is used for exactly what SPM cannot express: **app targets and
+XCUITest hosts**.
+
+---
+
+## 3. Module graph
+
+```
+                        ┌──────────────────┐
+                        │ DependencyEngine │
+                        └──────────────────┘
+
+  NetworkingKit      PersistenceKit      ImageCacheKit        ← interfaces
+        │                   │                   │                (deps: none)
+        │  NetworkingKitLive│ PersistenceKitLive│ ImageCacheKitLive
+        │  NetworkingKitMocks PersistenceKitMocks ImageCacheKitMocks
+        │                   │                   │
+        └─────────┬─────────┘                   │
+                  ▼                             │
+        ProductRepositoryLive ──► ProductDomain ◄┤
+                  ▲                    ▲        │
+                  │                    │     CommonKit ──► CommonUI
+           (runtime only)              │        │              │
+                  │       ┌────────────┴────┬───┴──────────────┘
+                  │       │                 │
+                  │  ProductListMVVM   ProductDetailMVVM
+                  │    │         │            │        │
+                  │  …MVVMUIKit …MVVMSwiftUI  …UIKit  …SwiftUI
+                  │       │                 │
+                  │  ProductListVIPER ──► ProductDetailInterface
+                  │       │                 ▲
+                  └───────┴─────────────────┘
+                               │
+                          AppFeature
+                               │
+                          app target
+```
+
+### Dependency rules
+
+| Rule | Enforced by |
+|---|---|
+| `ProductDomain` imports nothing | its empty `dependencies:` list |
+| No feature depends on `ProductRepositoryLive` | repository resolved by interface |
+| Nothing depends on a `*Live` target except the app's registration | `dependencies:` lists |
+| `ProductListVIPER` sees `ProductDetailInterface`, never an implementation | `dependencies:` list |
+| `ProductListMVVM` has **no UI module** in its dependencies | `dependencies:` list |
+
+That last one is the thesis made machine-checkable: `ProductListMVVMUIKit` and
+`ProductListMVVMSwiftUI` both depend on `ProductListMVVM`; it depends on
+neither. One ViewModel, two renderers, proven in the manifest rather than
+asserted in a comment.
+
+### Naming convention
+
+| Suffix | Contains | Depends on |
+|---|---|---|
+| `XKit` | protocols + value types | nothing |
+| `XKitLive` | the real implementation | `XKit` |
+| `XKitMocks` | stubs, spies, fixtures | `XKit` only |
+
+Feature tests link `*Mocks`. `URLSession` and `NSPersistentContainer` are absent
+from their build closure entirely.
+
+---
+
+## 4. Clean Architecture layering
+
+Clean is not duplicated per presentation architecture — it sits **underneath**
+both. There is exactly one `ProductDomain`.
+
+| Layer | Target | Holds |
+|---|---|---|
+| Entities | `ProductDomain` | `Product`, `Money` |
+| Use cases | `ProductDomain` | `FetchProductsUseCase`, `FetchProductDetailUseCase` |
+| Boundaries | `ProductDomain` | `ProductRepositoryInterface`, `DomainError` |
+| Data | `ProductRepositoryLive` | DTOs, mappers, remote + local sources, cache policy |
+| Presentation | feature targets | ViewModels / Presenters, views, navigation |
+
+Dependency inversion: `ProductRepositoryInterface` is declared in `ProductDomain`
+and implemented in `ProductRepositoryLive`, so the domain never sees URLSession
+or Core Data.
+
+Boundary discipline:
+
+- `ProductDTO` and `NSManagedObject` never leave `ProductRepositoryLive`.
+- `NetworkError` → `DomainError` → user-facing copy. Three vocabularies; none
+  leaks past its layer.
+- Views render `ProductDisplayModel` (already formatted), never `Product`.
+
+---
+
+## 5. MVVM-C
+
+| Piece | Owns | Must not |
+|---|---|---|
+| Coordinator | navigation, screen creation | know view internals |
+| ViewModel | state machine, use-case calls | `import UIKit` / `import SwiftUI` |
+| View | render state, forward intent | perform navigation |
+
+```swift
+@MainActor
+public final class ProductListViewModel: ObservableObject {
+    @Published public private(set) var state: ViewState<[ProductDisplayModel]> = .idle
+    public var onSelectProduct: ((String) -> Void)?   // intent out, not navigation
+}
+```
+
+`ObservableObject` rather than the `@Observable` macro: the UIKit controller
+needs a Combine publisher to `sink` on, and `@Observable` does not expose one.
+That choice is what lets one ViewModel drive both renderers.
+
+The coordinator lives in `AppFeature`, above both feature modules. This is a
+consequence of the module split, not a style preference — `ProductListMVVMUIKit`
+cannot import `ProductDetailMVVMUIKit`, so only the composition root can own
+the transition.
+
+- UIKit coordinator → `UINavigationController`
+- SwiftUI coordinator → `ObservableObject` owning a `NavigationPath`
+
+Same `onSelectProduct` seam, two navigation backends.
+
+---
+
+## 6. VIPER
+
+Five contracts per module. Assembly is plain initializer injection inside
+`createModule`, matching the reference codebase:
+
+```swift
+let view       = ProductListViewController()
+let interactor = ProductListInteractor(fetchProducts: ...)
+let router     = ProductListRouter(navigationController: nav)
+let presenter  = ProductListPresenter(view: view, interactor: interactor, router: router)
+view.presenter = presenter
+```
+
+**The Interactor wraps the shared use case** rather than talking to the
+repository directly. The VIPER-pure reading treats the Interactor *as* the use
+case; that would give the app two cores and defeat the shared-domain thesis, so
+the Interactor stays a thin composition seam. Recorded as a deliberate choice,
+with the alternative noted.
+
+The Router is where VIPER differs structurally from MVVM-C: navigation lives
+**inside** the module by definition, so the module needs its destination without
+being allowed to import it. That is the one place a runtime registry earns its
+keep — see §7.
+
+---
+
+## 7. Dependency injection
+
+Two mechanisms, one rule.
+
+| What you need | How you get it |
+|---|---|
+| Something inside your own module | initializer injection |
+| Something from another module you may not import | `@Dependency` |
+
+This is what the reference codebase already does: `createModule` wires V/I/P/R
+by hand with plain `init`, while Presenters declare
+`@Dependency var authManager: AuthenticationManagerActionInterface` — every
+`@Dependency` there is a cross-module `*Interface`, never a sibling object.
+
+Going all-`@Dependency` would trade compile-time safety and test isolation on
+~30 objects to solve a problem ~3 of them have. Going all-init-injection makes
+the list→detail link unbreakable, which defeats the modular claim.
+
+**The complete `@Dependency` surface in this project:**
+
+1. `ProductDetailInterface`, inside `ProductListVIPER`'s Router.
+2. `ProductRepositoryInterface`, inside module assembly (it is cross-module
+   infrastructure, same category as `authManager`).
+3. The `*Live` kits, registered once at launch.
+
+Everything else — every ViewModel, Presenter, Interactor, mapper — takes its
+collaborators through `init`. Feature tests never touch the engine.
+
+**Registrations are single shared instances**, built lazily on first resolve
+and reused. This is load-bearing rather than an optimisation: the repository
+owns the offline cache and the image loader owns the image cache, so a
+factory that rebuilt them per resolve would silently drop both caches on every
+architecture switch — and the "same core underneath" claim would be false.
+`registerFactory` exists for the rare dependency that must not be shared.
+
+`DependencyEngine` is written clean-room. The pattern (service locator keyed by
+`ObjectIdentifier` + property wrapper + per-module `DependencyRegistration`) is
+a published one; the reference implementation is Trendyol's copyrighted code
+and is not copied.
+
+### The architecture toggle rides on this
+
+All three implementations conform to one interface, so switching is a
+re-registration, not a `switch` in the composition root:
+
+```swift
+engine.register(value: MVVMUIKitProductList(), for: ProductListInterface.self)
+engine.register(value: VIPERProductList(),     for: ProductListInterface.self)
+```
+
+Structurally the same move as isowords choosing `DictionarySqliteClient` vs
+`DictionaryFileClient` at its entry point.
+
+---
+
+## 8. Facts from the live API
+
+Verified against the endpoints, not assumed:
+
+| Fact | Consequence |
+|---|---|
+| One product id is `"6_id_is_a_string"` | `Product.id` is `String`. `Int` silently drops it. |
+| Prices are integers in minor units (`9`, `557`) | `Money(minorUnits:)`. Never `Double`. |
+| Unknown id returns **HTTP 403**, not 404 | S3 denies listing. Map 403 **and** 404 to `.notFound`. |
+| List omits `description`; detail supplies it | Local store merges rather than overwrites. |
+| Images ~576 KB each | Downsample before display; cancel on cell reuse. |
+
+---
+
+## 9. Testing
+
+| Suite | Host | Covers |
+|---|---|---|
+| `*Tests` per module | none (SPM) | state machines, mappers, policies |
+| per-module UI tests | demo app in the xcodeproj | one screen's states in isolation |
+| app UI tests | main app | cross-module journey, smoke only |
+
+XCUITest requires an app bundle — an XCTest constraint, not an SPM one; a
+separate `.xcodeproj` per module would not avoid it. The standard answer is a
+per-module demo app that launches one feature against stubs. Planned for day 5
+as a worked example for `ProductDetail`.
+
+---
+
+## 10. Plan
+
+| Day | Work |
+|---|---|
+| 1 | Package skeletons, `ProductDomain`, `NetworkingKit` + Live + Mocks, `DependencyEngine` |
+| 2 | `PersistenceKit` Core Data stack, `ImageCacheKit`, `ProductRepositoryLive` + cache policy |
+| 3 | MVVM-C · UIKit end to end — compositional layout, diffable, prefetch, detail screen |
+| 4 am | SwiftUI renderer (reuses the ViewModels) |
+| 4 pm–5 am | VIPER · UIKit both modules |
+| 5 pm | Flow picker, demo app, README, test pass |
+
+Cut line: if day 4 overruns, **drop VIPER, keep SwiftUI.** SwiftUI is ~3 hours
+and still proves the UI-agnostic core; VIPER is a full day and the team ships
+MVVM. End of day 3 is already a complete submission.
+
+---
+
+## 11. Verification
+
+**CoreKit** supports macOS, so it runs straight from the CLI with no
+simulator — which is also evidence it has no UI coupling:
+
+```bash
+cd Packages/CoreKit && swift test          # 18 tests, ~0.005s
+```
+
+**The app package** is iOS-only — plain `swift build` targets macOS and would
+fail on UIKit. With the project moved under `App/`, the package scheme is
+reachable from the repo root:
+
+```bash
+cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+```
+
+And the app, from the root workspace:
+
+```bash
+xcodebuild -workspace TurkcellCase.xcworkspace -scheme TurkcellCase-UnalCelik \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+```
+
+**Close Xcode before moving files.** The project uses
+`PBXFileSystemSynchronizedRootGroup`, so Xcode watches these directories and
+will re-materialise files that move underneath it — which silently produces
+duplicates (a second `.xcdatamodeld` breaks the build with "Multiple commands
+produce Item+CoreDataClass.o").

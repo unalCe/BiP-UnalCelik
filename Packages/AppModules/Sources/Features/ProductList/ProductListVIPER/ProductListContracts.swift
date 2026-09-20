@@ -1,0 +1,24 @@
+import CommonKit
+import Foundation
+
+@MainActor
+public protocol ProductListViewInterface: AnyObject {
+    var presenter: (any ProductListPresenterInterface)? { get set }
+    func display(_ state: ViewState<[ProductDisplayModel]>)
+}
+
+@MainActor
+public protocol ProductListPresenterInterface: AnyObject {
+    func viewDidLoad()
+    func didSelectItem(at index: Int)
+    func didTapRetry()
+}
+
+public protocol ProductListInteractorInterface: Sendable {
+    func loadProducts() async throws -> [ProductDisplayModel]
+}
+
+@MainActor
+public protocol ProductListRouterInterface: AnyObject {
+    func routeToDetail(productID: String)
+}
