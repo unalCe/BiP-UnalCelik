@@ -9,11 +9,10 @@ import PackageDescription
 // app's registration links XKitLive.
 let package = Package(
     name: "CoreKit",
-    // No UIKit in here. Declaring macOS keeps it that way — a UI import would
-    // break the macOS build — and lets `swift test` run without a simulator.
-    platforms: [.iOS(.v17), .macOS(.v13)],
+    platforms: [.iOS(.v17)],
     products: [
         .library(name: "DependencyEngine", targets: ["DependencyEngine"]),
+        .library(name: "LayoutKit", targets: ["LayoutKit"]),
 
         .library(name: "NetworkingKit", targets: ["NetworkingKit"]),
         .library(name: "NetworkingKitLive", targets: ["NetworkingKitLive"]),
@@ -31,6 +30,12 @@ let package = Package(
         .target(
             name: "DependencyEngine",
             path: "Sources/DependencyInjection/DependencyEngine"
+        ),
+
+        // ── Layout ───────────────────────────────────────────────────────
+        .target(
+            name: "LayoutKit",
+            path: "Sources/Layout/LayoutKit"
         ),
 
         // ── Networking ───────────────────────────────────────────────────
@@ -86,6 +91,11 @@ let package = Package(
             name: "DependencyEngineTests",
             dependencies: ["DependencyEngine"],
             path: "Tests/DependencyInjection/DependencyEngineTests"
+        ),
+        .testTarget(
+            name: "LayoutKitTests",
+            dependencies: ["LayoutKit"],
+            path: "Tests/Layout/LayoutKitTests"
         ),
         .testTarget(
             name: "NetworkingKitLiveTests",

@@ -52,7 +52,7 @@ is already booted; harmless.)
 TurkcellCase.xcworkspace                 ← open this
 App/TurkcellCase-UnalCelik.xcodeproj     app bundle only: @main, assets, plist
 Packages/AppModules/                     16 targets — this app's code
-Packages/CoreKit/                        10 targets — reusable infrastructure
+Packages/CoreKit/                        11 targets — reusable infrastructure
 ```
 
 The app target is a thin shell that links one product, `AppFeature`:
@@ -141,9 +141,9 @@ These check the project without launching it — useful for confirming it is
 sound without opening Xcode.
 
 ```bash
-# 18 tests. Runs on macOS: no simulator, ~0.1s.
-# CoreKit imports no UIKit, and this is what keeps that honest.
-cd Packages/CoreKit && swift test
+# 28 tests across 5 bundles.
+cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
 ```bash
@@ -163,6 +163,6 @@ None of the three installs or runs the app — see **Running** above for that.
 ## Status
 
 Skeleton. Every boundary, both packages, all three flows wired and compiling;
-**62 tests green** (44 app package + 18 CoreKit). Views are state-machine `switch`es with `TODO` markers for
+**72 tests green** (44 AppModules + 28 CoreKit). Views are state-machine `switch`es with `TODO` markers for
 layout. Core Data and the image cache have working in-memory stand-ins behind
 their final interfaces. See ARCHITECTURE.md §10 for the day plan.

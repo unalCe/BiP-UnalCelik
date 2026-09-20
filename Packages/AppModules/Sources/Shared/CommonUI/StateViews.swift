@@ -1,3 +1,4 @@
+import LayoutKit
 import UIKit
 
 // TODO: real layout
@@ -27,14 +28,9 @@ public final class StateContainerView: UIView {
         stack.axis = .vertical
         stack.spacing = 12
         stack.alignment = .center
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(stack)
 
-        NSLayoutConstraint.activate([
-            stack.centerXAnchor.constraint(equalTo: centerXAnchor),
-            stack.centerYAnchor.constraint(equalTo: centerYAnchor),
-            stack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 24),
-        ])
+        addSubview(stack, centeredIn: nil)
+        stack.layout.leading(to: leadingAnchor, constant: 24, relation: .greaterThanOrEqual)
     }
 
     public func showLoading() {

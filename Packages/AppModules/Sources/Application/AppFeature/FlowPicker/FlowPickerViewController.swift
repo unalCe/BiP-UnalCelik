@@ -1,5 +1,6 @@
 import DependencyEngine
 import ProductListInterface
+import LayoutKit
 import UIKit
 
 /// TODO: proper layout
@@ -49,14 +50,10 @@ public final class FlowPickerViewController: UIViewController {
         ])
         stack.axis = .vertical
         stack.spacing = 16
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(stack)
 
-        NSLayoutConstraint.activate([
-            stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-        ])
+        view.addSubview(stack) {
+            $0.centerY(to: view).pinHorizontally(to: view, insets: .horizontal(24))
+        }
     }
 
     private func renderSelection() {

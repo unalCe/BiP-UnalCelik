@@ -8,7 +8,8 @@ public struct ProductDetailView: View {
     @ObservedObject private var viewModel: ProductDetailViewModel
     private let imageLoader: any ImageLoaderInterface
 
-    public init(viewModel: ProductDetailViewModel, imageLoader: any ImageLoaderInterface) {
+    public init(viewModel: ProductDetailViewModel,
+                imageLoader: any ImageLoaderInterface) {
         self.viewModel = viewModel
         self.imageLoader = imageLoader
     }

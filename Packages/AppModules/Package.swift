@@ -8,9 +8,7 @@ import PackageDescription
 // folders rather than becoming modules.
 let package = Package(
     name: "AppModules",
-    // iOS-only in practice. macOS is here because SPM requires a consumer's
-    // floor to be at least its dependency's, and CoreKit supports macOS.
-    platforms: [.iOS(.v17), .macOS(.v13)],
+    platforms: [.iOS(.v17)],
     products: [
         .library(name: "ProductDomain", targets: ["ProductDomain"]),
         .library(name: "ProductRepositoryLive", targets: ["ProductRepositoryLive"]),
@@ -69,6 +67,7 @@ let package = Package(
         .target(
             name: "CommonUI",
             dependencies: [
+                .product(name: "LayoutKit", package: "CoreKit"),
                 "CommonKit",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
             ],
@@ -87,21 +86,24 @@ let package = Package(
                 "CommonKit",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
             ],
-            path: "Sources/Features/ProductList/ProductListMVVM"
+            path: "Sources/Features/ProductList/ProductListMVVM",
+            exclude: ["ProductListMVVMUIKit", "ProductListMVVMSwiftUI"]
         ),
         .target(
             name: "ProductListMVVMUIKit",
-            dependencies: ["ProductListMVVM", "ProductListInterface", "CommonUI"],
-            path: "Sources/Features/ProductList/ProductListMVVMUIKit"
+            dependencies: [
+                .product(name: "LayoutKit", package: "CoreKit"),"ProductListMVVM", "ProductListInterface", "CommonUI"],
+            path: "Sources/Features/ProductList/ProductListMVVM/ProductListMVVMUIKit"
         ),
         .target(
             name: "ProductListMVVMSwiftUI",
             dependencies: ["ProductListMVVM", "ProductListInterface", "CommonUI"],
-            path: "Sources/Features/ProductList/ProductListMVVMSwiftUI"
+            path: "Sources/Features/ProductList/ProductListMVVM/ProductListMVVMSwiftUI"
         ),
         .target(
             name: "ProductListVIPER",
             dependencies: [
+                .product(name: "LayoutKit", package: "CoreKit"),
                 "ProductDomain", "CommonKit", "CommonUI",
                 "ProductListInterface",
                 "ProductDetailInterface",   // the protocol, never an implementation
@@ -118,21 +120,24 @@ let package = Package(
         .target(
             name: "ProductDetailMVVM",
             dependencies: ["ProductDomain", "CommonKit"],
-            path: "Sources/Features/ProductDetail/ProductDetailMVVM"
+            path: "Sources/Features/ProductDetail/ProductDetailMVVM",
+            exclude: ["ProductDetailMVVMUIKit", "ProductDetailMVVMSwiftUI"]
         ),
         .target(
             name: "ProductDetailMVVMUIKit",
-            dependencies: ["ProductDetailMVVM", "ProductDetailInterface", "CommonUI"],
-            path: "Sources/Features/ProductDetail/ProductDetailMVVMUIKit"
+            dependencies: [
+                .product(name: "LayoutKit", package: "CoreKit"),"ProductDetailMVVM", "ProductDetailInterface", "CommonUI"],
+            path: "Sources/Features/ProductDetail/ProductDetailMVVM/ProductDetailMVVMUIKit"
         ),
         .target(
             name: "ProductDetailMVVMSwiftUI",
             dependencies: ["ProductDetailMVVM", "ProductDetailInterface", "CommonUI"],
-            path: "Sources/Features/ProductDetail/ProductDetailMVVMSwiftUI"
+            path: "Sources/Features/ProductDetail/ProductDetailMVVM/ProductDetailMVVMSwiftUI"
         ),
         .target(
             name: "ProductDetailVIPER",
             dependencies: [
+                .product(name: "LayoutKit", package: "CoreKit"),
                 "ProductDomain", "CommonKit", "CommonUI",
                 "ProductDetailInterface",
                 .product(name: "DependencyEngine", package: "CoreKit"),
@@ -144,6 +149,7 @@ let package = Package(
         .target(
             name: "AppFeature",
             dependencies: [
+                .product(name: "LayoutKit", package: "CoreKit"),
                 "ProductDomain", "ProductRepositoryLive", "CommonKit", "CommonUI",
                 "ProductListInterface", "ProductListMVVMUIKit",
                 "ProductListMVVMSwiftUI", "ProductListVIPER",

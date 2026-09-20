@@ -1,5 +1,6 @@
 import CommonKit
 import CommonUI
+import LayoutKit
 import UIKit
 
 /// TODO: mirror the MVVM detail layout
@@ -25,14 +26,7 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
 
     private func setUpHierarchy() {
         stateView.onRetry = { [weak self] in self?.presenter?.didTapRetry() }
-        stateView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(stateView)
-        NSLayoutConstraint.activate([
-            stateView.topAnchor.constraint(equalTo: view.topAnchor),
-            stateView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            stateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            stateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-        ])
+        view.addSubview(stateView, pinnedToEdges: .zero)
     }
 
     public func display(_ state: ViewState<ProductDisplayModel>) {

@@ -185,6 +185,9 @@ asserted in a comment.
 | `XKitLive` | the real implementation | `XKit` |
 | `XKitMocks` | stubs, spies, fixtures | `XKit` only |
 
+`LayoutKit` is the exception to the naming convention — a UIKit constraint DSL
+with no interface/implementation split, since there is nothing to swap.
+
 Feature tests link `*Mocks`. `URLSession` and `NSPersistentContainer` are absent
 from their build closure entirely.
 
@@ -377,16 +380,15 @@ MVVM. End of day 3 is already a complete submission.
 
 ## 11. Verification
 
-**CoreKit** supports macOS, so it runs straight from the CLI with no
-simulator — which is also evidence it has no UI coupling:
+Both packages are iOS-only, so plain `swift build` / `swift test` won't work —
+they target macOS by default. Use a simulator destination.
 
 ```bash
-cd Packages/CoreKit && swift test          # 18 tests, ~0.005s
+cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
-**The app package** is iOS-only — plain `swift build` targets macOS and would
-fail on UIKit. With the project moved under `App/`, the package scheme is
-reachable from the repo root:
+And the app package:
 
 ```bash
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
