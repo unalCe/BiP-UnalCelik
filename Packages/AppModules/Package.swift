@@ -92,7 +92,10 @@ let package = Package(
         .target(
             name: "ProductListMVVMUIKit",
             dependencies: [
-                .product(name: "LayoutKit", package: "CoreKit"),"ProductListMVVM", "ProductListInterface", "CommonUI"],
+                "ProductListMVVM", "ProductListInterface", "CommonKit", "CommonUI",
+                .product(name: "LayoutKit", package: "CoreKit"),
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+            ],
             path: "Sources/Features/ProductList/ProductListMVVM/ProductListMVVMUIKit"
         ),
         .target(
@@ -187,6 +190,14 @@ let package = Package(
             name: "ProductListMVVMTests",
             dependencies: ["ProductListMVVM", "ProductRepositoryMocks"],
             path: "Tests/Features/ProductList/ProductListMVVMTests"
+        ),
+        .testTarget(
+            name: "ProductListMVVMUIKitTests",
+            dependencies: [
+                "ProductListMVVMUIKit", "ProductRepositoryMocks", "CommonKit",
+                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+            ],
+            path: "Tests/Features/ProductList/ProductListMVVMUIKitTests"
         ),
         .testTarget(
             name: "ProductListVIPERTests",

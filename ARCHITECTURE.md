@@ -75,6 +75,7 @@ the reasoning stays in one place.
 | Registrations are shared instances | the repository and image loader own their caches — rebuilding per resolve would drop both |
 | `DependencyEngine` is clean-room | the pattern is published; the reference implementation is copyrighted and was not copied |
 | Both packages are iOS-only | `LayoutKit` needs UIKit; declaring macOS would have meant `#if canImport(UIKit)` guards across its files for no benefit beyond a faster `swift test` |
+| The diffable item identifier is `Product.id`, not `ProductDisplayModel` | identity stays stable when content changes, so a price edit is a `reconfigureItems` on the live cell rather than a delete + insert that tears the cell down and reloads its image |
 | `LayoutKit` lives in CoreKit, not AppModules | it knows nothing about products — any UIKit app could take it |
 
 ### Source grouping
@@ -440,13 +441,28 @@ as a worked example for `ProductDetail`.
 
 ---
 
+## 9a. Known gaps
+
+Deferred deliberately, recorded here so they do not live as scattered `TODO`s.
+
+| Gap | Why it matters |
+|---|---|
+| No downsampling | the API images are 2418x2192; a 100pt cell decodes ~21 MB. `CGImageSourceCreateThumbnailAtIndex` with `kCGImageSourceThumbnailMaxPixelSize` is the fix |
+| `UIImage(data:)` decodes on the main actor | in `CachedImageView`, on every cell |
+| `ImageLoader.prefetch(_:)` is an empty body | the list deliberately does **not** conform to `UICollectionViewDataSourcePrefetching` yet — wiring it would only prove one no-op calls another. `ProductListViewModel.prefetchItems(at:)` also takes indices, which is a UICollectionView shape leaking into a shared ViewModel; it should take ids or URLs when the engine lands |
+| No in-flight coalescing | N cells plus prefetch hitting one URL issue N requests |
+| `InMemoryImageCache` never evicts | an unbounded `[URL: Data]`; no `NSCache`, no cost limit, no memory-warning handling |
+| `URLSession.shared` is unconfigured | no sized `URLCache`. The endpoints send no `Cache-Control`, only `ETag`/`Last-Modified`, so freshness is heuristic |
+
+---
+
 ## 10. Plan
 
 | Day | Work |
 |---|---|
 | 1 | Package skeletons, `ProductDomain`, `NetworkingKit` + Live + Mocks, `DependencyEngine` |
 | 2 | `PersistenceKit` Core Data stack, `ImageCacheKit`, `ProductRepositoryLive` + cache policy |
-| 3 | MVVM-C · UIKit end to end — compositional layout, diffable, prefetch, detail screen |
+| 3 | MVVM-C · UIKit end to end — compositional layout, diffable, prefetch, detail screen. **List done; detail screen and the image pipeline in §9a outstanding.** |
 | 4 am | SwiftUI renderer (reuses the ViewModels) |
 | 4 pm–5 am | VIPER · UIKit both modules |
 | 5 pm | Flow picker, demo app, README, test pass |
