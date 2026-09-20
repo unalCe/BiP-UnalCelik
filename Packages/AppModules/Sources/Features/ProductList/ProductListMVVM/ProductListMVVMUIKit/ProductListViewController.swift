@@ -12,14 +12,17 @@ import UIKit
 public final class ProductListViewController: UIViewController {
     private let viewModel: ProductListViewModel
     private let imageLoader: any ImageLoaderInterface
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Subviews
     private lazy var stateView: StateContainerView = {
         let view = StateContainerView()
         view.onRetry = { [weak self] in self?.viewModel.retry() }
         return view
     }()
-    private var cancellables = Set<AnyCancellable>()
 
-    public init(viewModel: ProductListViewModel, imageLoader: any ImageLoaderInterface) {
+    public init(viewModel: ProductListViewModel,
+                imageLoader: any ImageLoaderInterface) {
         self.viewModel = viewModel
         self.imageLoader = imageLoader
         super.init(nibName: nil, bundle: nil)
@@ -43,7 +46,7 @@ public final class ProductListViewController: UIViewController {
 
     private func bind() {
         viewModel.$state
-            .receive(on: DispatchQueue.main)
+//            .receive(on: DispatchQueue.main)
             .sink { [weak self] state in self?.render(state) }
             .store(in: &cancellables)
     }

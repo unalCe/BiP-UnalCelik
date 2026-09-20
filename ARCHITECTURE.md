@@ -74,6 +74,8 @@ the reasoning stays in one place.
 | `ProductDetailRouter` needs no `@Dependency` | the detail screen is a leaf and navigates nowhere new |
 | Registrations are shared instances | the repository and image loader own their caches — rebuilding per resolve would drop both |
 | `DependencyEngine` is clean-room | the pattern is published; the reference implementation is copyrighted and was not copied |
+| Both packages are iOS-only | `LayoutKit` needs UIKit; declaring macOS would have meant `#if canImport(UIKit)` guards across its files for no benefit beyond a faster `swift test` |
+| `LayoutKit` lives in CoreKit, not AppModules | it knows nothing about products — any UIKit app could take it |
 
 ### Source grouping
 
@@ -82,16 +84,45 @@ Within each package, sources are grouped by layer for navigation only:
 ```
 Packages/AppModules/Sources/        Packages/CoreKit/Sources/
   Application/AppFeature/             DependencyInjection/DependencyEngine/
-  Domain/ProductDomain/               Networking/NetworkingKit{,Live,Mocks}/
-  Data/ProductRepositoryLive/         Persistence/PersistenceKit{,Live,Mocks}/
-  Shared/CommonKit/ CommonUI/         ImageLoading/ImageCacheKit{,Live,Mocks}/
-  Features/ProductList/…(5)
-  Features/ProductDetail/…(5)
+  Domain/ProductDomain/               Layout/LayoutKit/
+  Data/ProductRepositoryLive/         Networking/NetworkingKit{,Live,Mocks}/
+  Shared/CommonKit/ CommonUI/         Persistence/PersistenceKit{,Live,Mocks}/
+  Features/ProductList/…              ImageLoading/ImageCacheKit{,Live,Mocks}/
+  Features/ProductDetail/…
 ```
 
 Every target carries an explicit `path:`, so the grouping folders stay folders
 and each module remains separately declared. Grouping changed no target name,
 product name, import, or dependency edge.
+
+Each feature nests its MVVM renderers inside the ViewModel's own folder:
+
+```
+Features/ProductDetail/
+  ProductDetailInterface/
+  ProductDetailMVVM/                  ← target: the ViewModel only
+    ProductDetailViewModel.swift
+    ProductDetailMVVMUIKit/           ← target
+    ProductDetailMVVMSwiftUI/         ← target
+  ProductDetailVIPER/                 ← target
+```
+
+SPM rejects overlapping target sources, so the parent lists the nested targets
+in `exclude:`:
+
+```swift
+.target(
+    name: "ProductDetailMVVM",
+    dependencies: ["ProductDomain", "CommonKit"],
+    path: "Sources/Features/ProductDetail/ProductDetailMVVM",
+    exclude: ["ProductDetailMVVMUIKit", "ProductDetailMVVMSwiftUI"]
+),
+```
+
+The nesting is filesystem-only: still three separate modules, each importable
+and independently buildable. **Adding a new subfolder under a parent target
+means adding it to `exclude:`** — otherwise its files are silently compiled
+into the parent.
 
 ### Why two packages and not one, or nine
 
@@ -132,9 +163,9 @@ XCUITest hosts**.
 ## 3. Module graph
 
 ```
-                        ┌──────────────────┐
-                        │ DependencyEngine │
-                        └──────────────────┘
+                ┌──────────────────┐  ┌───────────┐
+                │ DependencyEngine │  │ LayoutKit │  ← no dependencies
+                └──────────────────┘  └───────────┘
 
   NetworkingKit      PersistenceKit      ImageCacheKit        ← interfaces
         │                   │                   │                (deps: none)
@@ -145,7 +176,7 @@ XCUITest hosts**.
                   ▼                             │
         ProductRepositoryLive ──► ProductDomain ◄┤
                   ▲                    ▲        │
-                  │                    │     CommonKit ──► CommonUI
+                  │                    │     CommonKit ──► CommonUI ◄── LayoutKit
            (runtime only)              │        │              │
                   │       ┌────────────┴────┬───┴──────────────┘
                   │       │                 │
@@ -249,6 +280,49 @@ the transition.
 
 Same `onSelectProduct` seam, two navigation backends.
 
+### UIKit view conventions
+
+Programmatic, no storyboards or xibs. Views are declared with their appearance
+already applied, so configuration cannot drift from the declaration:
+
+```swift
+private let lockLabel: UILabel = {
+    let label = UILabel()
+    label.numberOfLines = 0
+    label.font = .preferredFont(forTextStyle: .footnote)
+    return label
+}()
+```
+
+`lazy var` only where the closure needs `self` — target-actions, delegates, or
+referencing another property. `lazy` is a deferral tool, not a performance one:
+it costs a nil-check on every read and cannot be `let`, and these views are all
+built during `viewDidLoad` anyway. It buys nothing here except access to `self`.
+
+That leaves `setUpHierarchy` as layout only:
+
+```swift
+private func setUpHierarchy() {
+    view.addSubview(stateView, pinnedToEdges: .zero)
+}
+```
+
+Constraints go through `LayoutKit`, a small DSL in CoreKit — no third-party
+layout library, and no `NSLayoutConstraint.activate` blocks at call sites:
+
+```swift
+container.addSubview(content, pinnedToEdges: .all(16))
+container.addSubview(header, pinnedToSafeArea: .horizontal(16))
+
+label.layout
+    .below(icon, spacing: 8)
+    .pinHorizontally(to: container, insets: .horizontal(16))
+    .height(44)
+```
+
+Insets are `NSDirectionalEdgeInsets` and positioning uses `after`/`before`
+rather than left/right, so layouts mirror correctly in RTL.
+
 ---
 
 ## 6. VIPER
@@ -350,9 +424,14 @@ Verified against the endpoints, not assumed:
 
 | Suite | Host | Covers |
 |---|---|---|
-| `*Tests` per module | none (SPM) | state machines, mappers, policies |
+| `*Tests` per module | iOS simulator | state machines, mappers, policies, layout |
 | per-module UI tests | demo app in the xcodeproj | one screen's states in isolation |
 | app UI tests | main app | cross-module journey, smoke only |
+
+Feature tests build against stubs, never implementations: `ProductRepositoryMocks`
+in place of `ProductRepositoryLive`, `NetworkingKitMocks` in place of
+`NetworkingKitLive`. So `URLSession` and Core Data are absent from a feature
+test's build closure entirely.
 
 XCUITest requires an app bundle — an XCTest constraint, not an SPM one; a
 separate `.xcodeproj` per module would not avoid it. The standard answer is a

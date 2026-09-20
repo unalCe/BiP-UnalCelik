@@ -81,9 +81,21 @@ Read `Package.swift`; the `dependencies:` lists *are* the architecture.
 | Nothing links a `*Live` target except the app's registration | tests link `*Mocks`; URLSession is absent from their build |
 | `ProductListVIPER` sees `ProductDetailInterface`, never an implementation | list cannot construct detail |
 | `ProductListMVVM` lists **no UI module** | "one ViewModel, two renderers" is a manifest fact, not a comment |
+| `LayoutKit` depends on nothing | any UIKit app could lift it out |
 
 Each kit ships three targets — `XKit` (protocols), `XKitLive` (the real thing),
-`XKitMocks` (stubs + captured fixtures).
+`XKitMocks` (stubs + captured fixtures). `LayoutKit` is the exception: a UIKit
+constraint DSL with nothing to swap, so no interface/implementation split.
+
+```swift
+container.addSubview(content, pinnedToEdges: .all(16))
+
+label.layout
+    .below(icon, spacing: 8)
+    .pinHorizontally(to: container, insets: .horizontal(16))
+```
+
+No third-party layout library. Insets are directional, so layouts mirror in RTL.
 
 ## The three stacks
 
