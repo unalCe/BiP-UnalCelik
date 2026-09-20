@@ -68,7 +68,11 @@ the reasoning stays in one place.
 | Decision | Why |
 |---|---|
 | `ImagePrefetchingInterface` is separate from `ImageLoaderInterface` | a scheduling engine can be introduced later without touching every loader conformer |
-| `ImageCacheKit` is `Data`-shaped, not `UIImage`-shaped | keeps the module free of UIKit, so it tests without a simulator and serves both renderers |
+| `ImageCacheKit` is `UIImage`-shaped, not `Data`-shaped | **reversed.** It used to be `Data`-shaped to stay free of UIKit, but the "tests without a simulator" half of that argument died when both packages went iOS-only and `LayoutKit` pulled UIKit into CoreKit anyway. Returning `Data` also forced every renderer to decode for itself, which is exactly where the 21 MB-per-cell problem lived. `ImageCacheKit` is iOS infrastructure; Domain and Data still never import it |
+| The image cache key is `(URL, bucketed pixel size)` | a list thumbnail and a detail image are legitimately different entries. Sizes round up to a 128px step so rotation and split-view reuse one entry instead of minting one per pixel. Powers of two were rejected: a 555px cell would decode at 1024px, 3.4x the pixels it can show |
+| `ImageLoader` is a `final class`, not an `actor` | `ImagePrefetchingInterface` requires synchronous, non-isolated methods, and an actor-isolated method cannot witness those. Making them `async` would break `ProductListViewModel`'s sync `@MainActor` calls and `UICollectionViewDataSourcePrefetching`. There is also no mutable state to protect — `NSCache` is thread-safe. Coalescing, when it lands, belongs in its own actor collaborator |
+| Downsampling is a plain `nonisolated async` func, not `Task.detached` | both run off the caller's actor, but only the former inherits cancellation. Detached, a scrolled-away cell would decode 5 megapixels to completion for an image nobody sees |
+| `HTTPCachePolicy` exists because `URLCache` does | these endpoints send no `Cache-Control` and a 2015 `Last-Modified`, so heuristic freshness would pin the product list for about a year. Images take `.standard` and stay cached; anything that can change takes `.revalidate` and accepts a 304 |
 | `CachedImage` (SwiftUI) takes an injected loader rather than using `AsyncImage` | `AsyncImage` has no cache shared with the UIKit path, and third-party libraries are ruled out |
 | The VIPER Router's destination is injected, not imported | `ProductListVIPER` must not link `ProductDetailVIPER`; see §7 |
 | `ProductDetailRouter` needs no `@Dependency` | the detail screen is a leaf and navigates nowhere new |
@@ -447,12 +451,11 @@ Deferred deliberately, recorded here so they do not live as scattered `TODO`s.
 
 | Gap | Why it matters |
 |---|---|
-| No downsampling | the API images are 2418x2192; a 100pt cell decodes ~21 MB. `CGImageSourceCreateThumbnailAtIndex` with `kCGImageSourceThumbnailMaxPixelSize` is the fix |
-| `UIImage(data:)` decodes on the main actor | in `CachedImageView`, on every cell |
-| `ImageLoader.prefetch(_:)` is an empty body | the list deliberately does **not** conform to `UICollectionViewDataSourcePrefetching` yet — wiring it would only prove one no-op calls another. `ProductListViewModel.prefetchItems(at:)` also takes indices, which is a UICollectionView shape leaking into a shared ViewModel; it should take ids or URLs when the engine lands |
-| No in-flight coalescing | N cells plus prefetch hitting one URL issue N requests |
-| `InMemoryImageCache` never evicts | an unbounded `[URL: Data]`; no `NSCache`, no cost limit, no memory-warning handling |
-| `URLSession.shared` is unconfigured | no sized `URLCache`. The endpoints send no `Cache-Control`, only `ETag`/`Last-Modified`, so freshness is heuristic |
+| No in-flight coalescing | N cells requesting one URL still issue N requests. Belongs in an `actor InFlightRegistry` beside `ImageLoader`, not inside it |
+| `ImageLoader.prefetch(_:)` is an empty body | the list deliberately does **not** conform to `UICollectionViewDataSourcePrefetching` yet — wiring it would only prove one no-op calls another. The interface should also take `[ImageRequest]`: a bare URL cannot say what size to prepare. Since pixel size is renderer knowledge, prefetching should move out of the shared ViewModel into a UIKit/SwiftUI adapter |
+| No concurrency ceiling on decodes | **measured as not worth building yet.** A limiter at 2 moved peak footprint by nothing (41.1/46.8 MB unbounded vs 41.4/44.0/38.4 MB limited), because `URLSession` already paces arrivals at ~6 connections per host and `CGImageSourceCreateThumbnailAtIndex` decodes subsampled — it never materialises the full 2418x2192 bitmap. `CG raster data` sits at 256 KB resident. Revisit only once prefetching lands and can queue dozens of decodes at once |
+| Scrolled-away cells cancel their download | letting it finish into the decoded cache would make scroll-back instant, at the cost of bandwidth. That trade only makes sense once there is a ceiling |
+| No disk tier for decoded images | deliberate. Encoded bytes are `URLCache`'s job; decoded bitmaps stay in memory under `NSCache` |
 
 ---
 

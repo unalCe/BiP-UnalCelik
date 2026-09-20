@@ -5,6 +5,8 @@ enum ProductEndpoint: Endpoint {
     case list
     case detail(id: String)
 
+    var cachePolicy: HTTPCachePolicy { .revalidate }
+
     var path: String {
         switch self {
         case .list:

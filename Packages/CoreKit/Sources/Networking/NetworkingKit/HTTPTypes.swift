@@ -7,22 +7,36 @@ public enum HTTPMethod: String, Sendable {
     case delete = "DELETE"
 }
 
+/// Kept free of `URLRequest.CachePolicy` so the interface stays transport-agnostic.
+public enum HTTPCachePolicy: Sendable, Equatable {
+    /// Whatever the response headers say. Right for immutable bytes such as images.
+    case standard
+    /// Always ask, and accept a 304. Right for anything that can change, and
+    /// necessary here: these endpoints send no `Cache-Control`, so heuristic
+    /// freshness against a 2015 `Last-Modified` would pin the response for
+    /// roughly a year.
+    case revalidate
+}
+
 public struct HTTPRequest: Sendable, Equatable {
     public var url: URL
     public var method: HTTPMethod
     public var headers: [String: String]
     public var body: Data?
+    public var cachePolicy: HTTPCachePolicy
 
     public init(
         url: URL,
         method: HTTPMethod = .get,
         headers: [String: String] = [:],
-        body: Data? = nil
+        body: Data? = nil,
+        cachePolicy: HTTPCachePolicy = .standard
     ) {
         self.url = url
         self.method = method
         self.headers = headers
         self.body = body
+        self.cachePolicy = cachePolicy
     }
 }
 

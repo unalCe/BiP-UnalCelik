@@ -1,7 +1,7 @@
 import Foundation
 import NetworkingKit
 
-// TODO: maybe think about URLCache, retry mechanisms, interceptors
+// TODO: maybe think about retry mechanisms, interceptors
 public struct URLSessionHTTPClient: HTTPClientInterface {
     private let session: URLSession
 
@@ -13,6 +13,7 @@ public struct URLSessionHTTPClient: HTTPClientInterface {
         var urlRequest = URLRequest(url: request.url)
         urlRequest.httpMethod = request.method.rawValue
         urlRequest.httpBody = request.body
+        urlRequest.cachePolicy = request.cachePolicy.urlRequestPolicy
         request.headers.forEach { urlRequest.setValue($1, forHTTPHeaderField: $0) }
 
         let data: Data
@@ -38,5 +39,14 @@ public struct URLSessionHTTPClient: HTTPClientInterface {
             throw NetworkError.unacceptableStatus(code: http.statusCode, body: data)
         }
         return result
+    }
+}
+
+private extension HTTPCachePolicy {
+    var urlRequestPolicy: URLRequest.CachePolicy {
+        switch self {
+        case .standard: .useProtocolCachePolicy
+        case .revalidate: .reloadRevalidatingCacheData
+        }
     }
 }

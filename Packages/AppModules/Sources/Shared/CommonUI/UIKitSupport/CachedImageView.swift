@@ -1,12 +1,13 @@
-import UIKit
 import ImageCacheKit
+import UIKit
 
-/// Holds its load task so `prepareForReuse` can cancel it — otherwise a fast
-/// scroll lands the wrong image in a recycled cell.
+/// Measures itself, so callers never do pixel arithmetic. The request is issued
+/// from `layoutSubviews`, because bounds are zero until the cell is laid out.
 @MainActor
 public final class CachedImageView: UIImageView {
     private var loadTask: Task<Void, Never>?
-    private var currentURL: URL?
+    private var pendingURL: URL?
+    private var currentRequest: ImageRequest?
     private let loader: any ImageLoaderInterface
 
     public init(loader: any ImageLoaderInterface) {
@@ -23,20 +24,40 @@ public final class CachedImageView: UIImageView {
     public func setImage(from url: URL?, placeholder: UIImage? = nil) {
         cancel()
         image = placeholder
-        currentURL = url
-        guard let url else { return }
-
-        loadTask = Task { [loader] in
-            guard let data = try? await loader.data(for: url) else { return }
-            // TODO: decode + downsample off the main thread
-            guard !Task.isCancelled, self.currentURL == url else { return }
-            self.image = UIImage(data: data)
-        }
+        pendingURL = url
+        setNeedsLayout()
     }
 
     public func cancel() {
         loadTask?.cancel()
         loadTask = nil
-        currentURL = nil
+        pendingURL = nil
+        currentRequest = nil
+    }
+
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        loadIfNeeded()
+    }
+
+    private func loadIfNeeded() {
+        guard let url = pendingURL, bounds.width > 0, bounds.height > 0 else { return }
+
+        let scale = traitCollection.displayScale > 0 ? traitCollection.displayScale : 3
+        let pixelSize = Int(ceil(max(bounds.width, bounds.height) * scale))
+        let request = ImageRequest(url: url, maxPixelSize: pixelSize, scale: scale)
+
+        // Also what stops an infinite layout pass: assigning `image` can change
+        // `intrinsicContentSize`, which lays out again.
+        guard request != currentRequest else { return }
+
+        loadTask?.cancel()
+        currentRequest = request
+
+        loadTask = Task { [loader] in
+            guard let loaded = try? await loader.image(for: request) else { return }
+            guard self.currentRequest == request else { return }
+            self.image = loaded
+        }
     }
 }

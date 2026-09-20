@@ -1,21 +1,22 @@
-import Foundation
 import ImageCacheKit
+import UIKit
 
 public final class MockImageLoader: ImageLoaderInterface, ImagePrefetchingInterface, @unchecked Sendable {
     private let lock = NSLock()
-    private var requested: [URL] = []
+    private var requested: [ImageRequest] = []
     private var prefetched: [URL] = []
-    private let result: Result<Data, any Error>
+    private let result: Result<UIImage, any Error>
 
-    public var requestedURLs: [URL] { lock.withLock { requested } }
+    public var requestedRequests: [ImageRequest] { lock.withLock { requested } }
+    public var requestedURLs: [URL] { lock.withLock { requested.map(\.url) } }
     public var prefetchedURLs: [URL] { lock.withLock { prefetched } }
 
-    public init(result: Result<Data, any Error> = .success(Data())) {
+    public init(result: Result<UIImage, any Error> = .success(UIImage())) {
         self.result = result
     }
 
-    public func data(for url: URL) async throws -> Data {
-        lock.withLock { requested.append(url) }
+    public func image(for request: ImageRequest) async throws -> UIImage {
+        lock.withLock { requested.append(request) }
         return try result.get()
     }
 
@@ -26,20 +27,4 @@ public final class MockImageLoader: ImageLoaderInterface, ImagePrefetchingInterf
     public func cancelPrefetch(_ urls: [URL]) {
         lock.withLock { prefetched.removeAll { urls.contains($0) } }
     }
-}
-
-public actor MockImageCache: ImageCacheInterface {
-    private var storage: [URL: Data]
-    public private(set) var storeCount = 0
-
-    public init(seed: [URL: Data] = [:]) { self.storage = seed }
-
-    public func data(for url: URL) async -> Data? { storage[url] }
-
-    public func store(_ data: Data, for url: URL) async {
-        storeCount += 1
-        storage[url] = data
-    }
-
-    public func removeAll() async { storage.removeAll() }
 }

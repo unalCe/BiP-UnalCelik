@@ -10,7 +10,7 @@ public enum ImageCacheKitDependencyRegistration: DependencyRegistration {
             fatalError("Register NetworkingKitDependencyRegistration before ImageCacheKit")
         }
 
-        let loader = ImageLoader(client: client, cache: InMemoryImageCache())
+        let loader = ImageLoader(client: client)
         engine.register(value: loader as any ImageLoaderInterface, for: (any ImageLoaderInterface).self)
         engine.register(value: loader as any ImagePrefetchingInterface, for: (any ImagePrefetchingInterface).self)
     }
