@@ -11,7 +11,11 @@ import UIKit
 public final class ProductDetailViewController: UIViewController {
     private let viewModel: ProductDetailViewModel
     private let imageLoader: any ImageLoaderInterface
-    private let stateView = StateContainerView()
+    private lazy var stateView: StateContainerView = {
+        let view = StateContainerView()
+        view.onRetry = { [weak self] in self?.viewModel.retry() }
+        return view
+    }()
     private var cancellables = Set<AnyCancellable>()
 
     public init(viewModel: ProductDetailViewModel, imageLoader: any ImageLoaderInterface) {
@@ -32,7 +36,6 @@ public final class ProductDetailViewController: UIViewController {
     }
 
     private func setUpHierarchy() {
-        stateView.onRetry = { [weak self] in self?.viewModel.retry() }
         view.addSubview(stateView, pinnedToEdges: .zero)
     }
 

@@ -8,7 +8,11 @@ import UIKit
 public final class ProductListViewController: UIViewController, ProductListViewInterface {
     public var presenter: (any ProductListPresenterInterface)?
 
-    private let stateView = StateContainerView()
+    private lazy var stateView: StateContainerView = {
+        let view = StateContainerView()
+        view.onRetry = { [weak self] in self?.presenter?.didTapRetry() }
+        return view
+    }()
     private var items: [ProductDisplayModel] = []
 
     public init() {
@@ -27,7 +31,6 @@ public final class ProductListViewController: UIViewController, ProductListViewI
     }
 
     private func setUpHierarchy() {
-        stateView.onRetry = { [weak self] in self?.presenter?.didTapRetry() }
         view.addSubview(stateView, pinnedToEdges: .zero)
     }
 

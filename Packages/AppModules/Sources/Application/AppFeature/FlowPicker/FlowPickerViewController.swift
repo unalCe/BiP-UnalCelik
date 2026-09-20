@@ -11,12 +11,42 @@ public final class FlowPickerViewController: UIViewController {
     }
 
     private let engine: DependencyEngine
-    private let architectureControl = UISegmentedControl(
-        items: ArchitectureStyle.allCases.map(\.title)
-    )
-    private let frameworkControl = UISegmentedControl(items: UIFramework.allCases.map(\.title))
-    private let lockLabel = UILabel()
-    private let openButton = UIButton(type: .system)
+
+    private lazy var architectureControl: UISegmentedControl = {
+        let control = UISegmentedControl(items: ArchitectureStyle.allCases.map(\.title))
+        control.addTarget(self, action: #selector(architectureChanged), for: .valueChanged)
+        return control
+    }()
+
+    private lazy var frameworkControl: UISegmentedControl = {
+        let control = UISegmentedControl(items: UIFramework.allCases.map(\.title))
+        control.addTarget(self, action: #selector(frameworkChanged), for: .valueChanged)
+        return control
+    }()
+
+    private let lockLabel: UILabel = {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.font = .preferredFont(forTextStyle: .footnote)
+        label.textColor = .secondaryLabel
+        return label
+    }()
+
+    private lazy var openButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.configuration = .filled()
+        button.addTarget(self, action: #selector(openTapped), for: .touchUpInside)
+        return button
+    }()
+
+    private lazy var stack: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [
+            architectureControl, frameworkControl, lockLabel, openButton,
+        ])
+        stack.axis = .vertical
+        stack.spacing = 16
+        return stack
+    }()
 
     public init(engine: DependencyEngine = .shared) {
         self.engine = engine
@@ -35,22 +65,6 @@ public final class FlowPickerViewController: UIViewController {
     }
 
     private func setUpHierarchy() {
-        architectureControl.addTarget(self, action: #selector(architectureChanged), for: .valueChanged)
-        frameworkControl.addTarget(self, action: #selector(frameworkChanged), for: .valueChanged)
-
-        openButton.addTarget(self, action: #selector(openTapped), for: .touchUpInside)
-        openButton.configuration = .filled()
-
-        lockLabel.numberOfLines = 0
-        lockLabel.font = .preferredFont(forTextStyle: .footnote)
-        lockLabel.textColor = .secondaryLabel
-
-        let stack = UIStackView(arrangedSubviews: [
-            architectureControl, frameworkControl, lockLabel, openButton,
-        ])
-        stack.axis = .vertical
-        stack.spacing = 16
-
         view.addSubview(stack) {
             $0.centerY(to: view).pinHorizontally(to: view, insets: .horizontal(24))
         }
