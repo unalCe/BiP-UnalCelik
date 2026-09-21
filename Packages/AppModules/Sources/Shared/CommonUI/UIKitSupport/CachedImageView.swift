@@ -2,8 +2,6 @@ import ImageCacheKit
 import PerformanceKit
 import UIKit
 
-/// Measures itself, so callers never do pixel arithmetic. The request is issued
-/// from `layoutSubviews`, because bounds are zero until the cell is laid out.
 @MainActor
 public final class CachedImageView: UIImageView {
     private var loadTask: Task<Void, Never>?
@@ -52,12 +50,14 @@ public final class CachedImageView: UIImageView {
     private func loadIfNeeded() {
         guard let url = pendingURL, bounds.width > 0, bounds.height > 0 else { return }
 
-        let scale = traitCollection.displayScale > 0 ? traitCollection.displayScale : 3
-        let pixelSize = Int(ceil(max(bounds.width, bounds.height) * scale))
-        let request = ImageRequest(url: url, maxPixelSize: pixelSize, scale: scale)
+        let request = ImageRequest(
+            url: url,
+            pointSize: max(bounds.width, bounds.height),
+            scale: traitCollection.displayScale
+        )
 
-        // Also what stops an infinite layout pass: assigning `image` can change
-        // `intrinsicContentSize`, which lays out again.
+        // also stops an infinite layout pass: setting `image` changes
+        // `intrinsicContentSize`, which lays out again
         guard request != currentRequest else { return }
 
         loadTask?.cancel()

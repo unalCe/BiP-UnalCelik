@@ -28,14 +28,15 @@ public struct MVVMUIKitProductListModule: ProductListInterface {
     }
 
     public func createModule(navigationController: UINavigationController?) -> UIViewController {
-        let viewModel = ProductListViewModel(
-            fetchProducts: fetchProducts,
-            prefetcher: prefetcher,
-            tracer: tracer
-        )
+        let viewModel = ProductListViewModel(fetchProducts: fetchProducts, tracer: tracer)
         viewModel.onSelectProduct = { [onSelectProduct] id in
             onSelectProduct(id, navigationController)
         }
-        return ProductListViewController(viewModel: viewModel, imageLoader: imageLoader, tracer: tracer)
+        return ProductListViewController(
+            viewModel: viewModel,
+            imageLoader: imageLoader,
+            imagePrefetcher: prefetcher,
+            tracer: tracer
+        )
     }
 }

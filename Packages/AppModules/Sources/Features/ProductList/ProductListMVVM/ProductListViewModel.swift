@@ -1,7 +1,6 @@
 import Combine
 import CommonKit
 import Foundation
-import ImageCacheKit
 import PerformanceKit
 import ProductDomain
 
@@ -14,7 +13,6 @@ public final class ProductListViewModel: ObservableObject {
     private let fetchProducts: any FetchProductsUseCase
     private let mapper: ProductDisplayMapper
     private let errorPresenter: ErrorPresenter
-    private let prefetcher: (any ImagePrefetchingInterface)?
     private let tracer: any PerformanceTracing
 
     private var items: [ProductDisplayModel] = []
@@ -24,13 +22,11 @@ public final class ProductListViewModel: ObservableObject {
         fetchProducts: any FetchProductsUseCase,
         mapper: ProductDisplayMapper = ProductDisplayMapper(),
         errorPresenter: ErrorPresenter = ErrorPresenter(),
-        prefetcher: (any ImagePrefetchingInterface)? = nil,
         tracer: any PerformanceTracing = NoopPerformanceTracer()
     ) {
         self.fetchProducts = fetchProducts
         self.mapper = mapper
         self.errorPresenter = errorPresenter
-        self.prefetcher = prefetcher
         self.tracer = tracer
     }
 
@@ -52,19 +48,7 @@ public final class ProductListViewModel: ObservableObject {
         onSelectProduct?(id)
     }
 
-    public func prefetchItems(at indices: [Int]) {
-        prefetcher?.prefetch(imageURLs(at: indices))
-    }
-
-    public func cancelPrefetchingItems(at indices: [Int]) {
-        prefetcher?.cancelPrefetch(imageURLs(at: indices))
-    }
-
     // MARK: - Work
-
-    private func imageURLs(at indices: [Int]) -> [URL] {
-        indices.compactMap { items.indices.contains($0) ? items[$0].imageURL : nil }
-    }
 
     private func load() {
         loadTask?.cancel()

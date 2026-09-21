@@ -117,6 +117,32 @@ engine.register(value: VIPERProductListModule(…),     for: (any ProductListInt
 The repository and image cache are shared instances, so toggling mid-session
 refetches nothing — the visible proof that the core is untouched.
 
+### Images
+
+The API serves 2418x2192 JPEGs, ~576 KB each, into a 177pt cell. Decoding those
+at full size costs ~21 MB of bitmap apiece, so the pipeline is size-aware end to
+end:
+
+```
+ImageRequest(url:maxPixelSize:)   pixel size is part of the cache key,
+                                  rounded up to a 128px bucket
+        |
+ImageLoader                       cache-first
+   +-- InFlightRegistry           one shared task per request
+   +-- CGImageDownsampler         ImageIO thumbnail, off the main actor
+   +-- NSCacheImageCache          decoded, cost-limited, evicts on warning
+        |
+ImagePrefetcher                   speculative, driven by the collection view
+```
+
+A UIKit cell measures itself and asks for what it can show; SwiftUI passes its
+known frame. Measured on the list screen: resident memory fell from 67.0 MB to
+30.9 MB, and a full scroll issues exactly 12 requests for 12 products.
+
+Encoded bytes are `URLSession`'s problem, held in a configured `URLCache`;
+decoded bitmaps are `NSCache`'s. Anything that can change asks for
+`HTTPCachePolicy.revalidate`, since these endpoints send no `Cache-Control`.
+
 ### No VIPER + SwiftUI
 
 Selecting VIPER locks the framework toggle and says why. VIPER binds Presenter
@@ -153,13 +179,13 @@ These check the project without launching it — useful for confirming it is
 sound without opening Xcode.
 
 ```bash
-# 45 tests across 7 bundles.
+# 50 tests across 7 bundles.
 cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
 ```bash
-# 52 tests across 7 bundles, on a simulator.
+# 53 tests across 8 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -186,6 +212,6 @@ Performance tracing launch arguments (`-perfHUD YES`, `-perfTracing NO`,
 ## Status
 
 Skeleton. Every boundary, both packages, all three flows wired and compiling;
-**97 tests green** (52 AppModules + 45 CoreKit). Views are state-machine `switch`es with `TODO` markers for
+**103 tests green** (53 AppModules + 50 CoreKit). Views are state-machine `switch`es with `TODO` markers for
 layout. Core Data and the image cache have working in-memory stand-ins behind
 their final interfaces. See ARCHITECTURE.md §10 for the day plan.

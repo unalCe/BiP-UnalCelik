@@ -7,6 +7,10 @@ This computes the same statistics PerformanceReport does, from the trace.
 
     Scripts/perf_summary.py path/to/run.trace            # markdown table
     Scripts/perf_summary.py path/to/run.trace --json     # machine-readable
+    Scripts/perf_summary.py path/to/run.trace --run 3    # one run of several
+
+Run numbers are the document's own, 1-based in recording order. Instruments'
+labels can differ once runs have been deleted; check the start times printed.
 
 Needs Xcode's `xctrace`. Works on any template that records os_signpost
 (System Trace, Time Profiler, os_signpost...). Hangs come from the Hangs
@@ -26,18 +30,20 @@ SUBSYSTEM = "TurkcellCase.Performance"
 # Report order; anything else found is appended.
 ORDER = [
     "products.fetch", "list.timeToContent",
-    "image.load", "image.network", "image.decode", "image.decodeCPU",
+    "image.load", "image.network", "image.decode", "image.decodeCPU", "image.prefetch",
     "image.visibleWait", "scroll.hitch", "scroll.hitchRatio",
 ]
 
 
-def export(trace, xpath=None, toc=False):
+def export(trace, xpath=None, toc=False, attempts=3):
+    """`xctrace export` fails now and then on large multi-run documents; retry."""
     cmd = ["xcrun", "xctrace", "export", "--input", trace]
     cmd += ["--toc"] if toc else ["--xpath", xpath]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0 or not result.stdout.strip():
-        return None
-    return ET.fromstring(result.stdout)
+    for _ in range(attempts):
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            return ET.fromstring(result.stdout)
+    return None
 
 
 def rows(root):
@@ -83,10 +89,10 @@ def percentile(sorted_values, fraction):
     return sorted_values[min(max(rank, 1), len(sorted_values)) - 1]
 
 
-def summarise(trace):
+def summarise(trace, run=1):
     signposts = export(
         trace,
-        '/trace-toc/run[@number="1"]/data/table[@schema="os-signpost" and @category="PointsOfInterest"]',
+        f'/trace-toc/run[@number="{run}"]/data/table[@schema="os-signpost" and @category="PointsOfInterest"]',
     )
     samples = defaultdict(list)          # name -> [(value, outcome, attributes)]
     open_intervals = {}
@@ -130,16 +136,19 @@ def summarise(trace):
 
     hangs = [
         {"start": fmt(row, "start"), "duration": fmt(row, "duration"), "type": fmt(row, "hang-type")}
-        for row in rows(export(trace, '/trace-toc/run[@number="1"]/data/table[@schema="potential-hangs"]'))
+        for row in rows(export(trace, f'/trace-toc/run[@number="{run}"]/data/table[@schema="potential-hangs"]'))
     ]
 
     toc = export(trace, toc=True)
-    device = toc.find(".//device") if toc is not None else None
+    run_node = toc.find(f'run[@number="{run}"]') if toc is not None else None
+    device = run_node.find(".//device") if run_node is not None else None
     return {
         "trace": trace,
+        "run": run,
+        "started": None if run_node is None else run_node.findtext(".//summary/start-date"),
         "device": None if device is None else f'{device.get("model")}, iOS {device.get("os-version")}',
-        "template": None if toc is None else toc.findtext(".//template-name"),
-        "duration_s": None if toc is None else float(toc.findtext(".//summary/duration") or 0),
+        "template": None if run_node is None else run_node.findtext(".//template-name"),
+        "duration_s": None if run_node is None else float(run_node.findtext(".//summary/duration") or 0),
         "metrics": metrics,
         "hangs": hangs,
     }
@@ -150,8 +159,8 @@ def markdown(summary):
         return "–" if value is None else f"{value:.1f}"
 
     lines = [
-        f"Trace: `{summary['trace']}`  ",
-        f"Device: {summary['device']} · {summary['template']} · {summary['duration_s']:.1f} s",
+        f"Trace: `{summary['trace']}` · run {summary['run']} · started {summary['started']}  ",
+        f"Device: {summary['device']} · {summary['template']} · {summary['duration_s'] or 0:.1f} s",
         "",
         "| Metric | n | mean | p50 | p90 | max | unit | notes |",
         "|---|---|---|---|---|---|---|---|",
@@ -165,6 +174,8 @@ def markdown(summary):
             total = sum(m["sources"].values())
             memory = m["sources"].get("memory", 0)
             notes.append(f"memory {memory}/{total} ({100 * memory // total}% hit)")
+            if m["sources"].get("inflight"):
+                notes.append(f"joined in-flight {m['sources']['inflight']}")
         lines.append(
             f"| `{name}` | {m['count']} | {f(m['mean'])} | {f(m['p50'])} | {f(m['p90'])} "
             f"| {f(m['max'])} | {m['unit']} | {'; '.join(notes)} |"
@@ -179,9 +190,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("trace")
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--run", type=int, default=1, help="run number within the document (default 1)")
     args = parser.parse_args()
 
-    summary = summarise(args.trace)
+    summary = summarise(args.trace, args.run)
     if not summary["metrics"]:
         sys.exit(f"No {SUBSYSTEM} signposts found. Was tracing on? (-perfTracing YES for Release/Profile builds)")
     print(json.dumps(summary, indent=2) if args.json else markdown(summary))

@@ -159,6 +159,7 @@ extension PerformanceMetric {
         case .imageNetwork: return "image.network"
         case .imageDecode: return "image.decode"
         case .imageDecodeCPU: return "image.decodeCPU"
+        case .imagePrefetch: return "image.prefetch"
         case .imageVisibleWait: return "image.visibleWait"
         case .scrollHitch: return "scroll.hitch"
         case .scrollHitchRatio: return "scroll.hitchRatio"

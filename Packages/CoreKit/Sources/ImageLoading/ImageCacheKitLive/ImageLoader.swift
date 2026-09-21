@@ -3,15 +3,12 @@ import NetworkingKit
 import PerformanceKit
 import UIKit
 
-/// A `final class`, not an `actor`: `ImagePrefetchingInterface` requires
-/// synchronous, non-isolated methods that an actor cannot witness. There is no
-/// mutable state to protect either — `NSCache` is already thread-safe. When
-/// in-flight coalescing lands it belongs in its own actor collaborator.
-public final class ImageLoader: ImageLoaderInterface, ImagePrefetchingInterface, Sendable {
+public final class ImageLoader: ImageLoaderInterface, Sendable {
     private let client: any HTTPClientInterface
     private let cache: any DecodedImageCaching
     private let downsampler: any ImageDownsampling
     private let tracer: any PerformanceTracing
+    private let registry = InFlightRegistry()
 
     init(
         client: any HTTPClientInterface,
@@ -39,9 +36,14 @@ public final class ImageLoader: ImageLoaderInterface, ImagePrefetchingInterface,
         )
     }
 
-    /// Traced as `image.load`, tagged `source=memory|network` so the report
-    /// carries the cache hit rate, with the network phase nested. The decode
-    /// traces itself, since only the downsampler knows where its work starts.
+    /// Traced as `image.load`, tagged by where the image came from, so the
+    /// report carries the cache hit rate:
+    /// - `memory`: decoded cache hit.
+    /// - `inflight`: joined a load already running, usually a prefetch that
+    ///   had started but not finished. Prefetching helped, but not fully.
+    /// - `network`: this call did the download.
+    /// The network phase is nested; the decode traces itself, since only the
+    /// downsampler knows where its work starts.
     public func image(for request: ImageRequest) async throws -> UIImage {
         let load = tracer.begin(.imageLoad)
 
@@ -51,18 +53,22 @@ public final class ImageLoader: ImageLoaderInterface, ImagePrefetchingInterface,
         }
 
         do {
-            let response = try await tracer.measure(.imageNetwork) {
-                try await client.send(HTTPRequest(url: request.url))
+            let (image, joined) = try await registry.image(for: request) { [self] in
+                if let cached = cache.image(for: request) { return cached }
+
+                let response = try await tracer.measure(.imageNetwork) {
+                    try await client.send(HTTPRequest(url: request.url))
+                }
+                let image = try await downsampler.downsample(
+                    response.body,
+                    maxPixelSize: request.maxPixelSize,
+                    scale: request.scale
+                )
+
+                cache.insert(image, for: request)
+                return image
             }
-
-            let image = try await downsampler.downsample(
-                response.body,
-                maxPixelSize: request.maxPixelSize,
-                scale: request.scale
-            )
-
-            cache.insert(image, for: request)
-            tracer.end(load, attributes: ["source": "network"])
+            tracer.end(load, attributes: ["source": joined ? "inflight" : "network"])
             return image
         } catch {
             tracer.end(load,
@@ -71,9 +77,4 @@ public final class ImageLoader: ImageLoaderInterface, ImagePrefetchingInterface,
             throw error
         }
     }
-
-    // TODO: hand off to a scheduling engine
-    public func prefetch(_ urls: [URL]) {}
-
-    public func cancelPrefetch(_ urls: [URL]) {}
 }

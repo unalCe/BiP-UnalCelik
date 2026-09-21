@@ -4,10 +4,6 @@ import ImageIO
 import PerformanceKit
 import UIKit
 
-/// `nonisolated async` rather than `Task.detached`: both run off the caller's
-/// actor, but only this one inherits cancellation. A detached decode would run
-/// a 5 megapixel thumbnail to completion for a cell that scrolled away.
-///
 /// Traces only the decode call, as wall time (`image.decode`) and this
 /// thread's CPU time (`image.decodeCPU`). On device ImageIO hands JPEGs to
 /// the hardware decoder, so a slow decode can be a thread blocked waiting its

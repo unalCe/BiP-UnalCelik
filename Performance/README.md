@@ -20,9 +20,11 @@ Same scenario every time, or the numbers don't compare:
 
        Scripts/perf_summary.py path/to/run.trace          # table
        Scripts/perf_summary.py path/to/run.trace --json   # for this folder
+       Scripts/perf_summary.py path/to/run.trace --run 3  # one run of several
 
 ## Baselines
 
 | Date | Name | Change |
 |---|---|---|
 | 2026-09-21 | [before-prefetch-cold](baselines/2026-09-21-before-prefetch-cold.md) | none, pre-prefetching |
+| 2026-09-21 | [after-prefetch-cold](baselines/2026-09-21-after-prefetch-cold.md) | prefetching (`1756df0`), 2 cold runs |

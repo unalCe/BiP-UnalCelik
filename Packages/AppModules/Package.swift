@@ -85,7 +85,6 @@ let package = Package(
             dependencies: [
                 "ProductDomain",
                 "CommonKit",
-                .product(name: "ImageCacheKit", package: "CoreKit"),
                 .product(name: "PerformanceKit", package: "CoreKit"),
             ],
             path: "Sources/Features/ProductList/ProductListMVVM",
@@ -103,7 +102,10 @@ let package = Package(
         ),
         .target(
             name: "ProductListMVVMSwiftUI",
-            dependencies: ["ProductListMVVM", "ProductListInterface", "CommonUI"],
+            dependencies: [
+                "ProductListMVVM", "ProductListInterface", "CommonUI",
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+            ],
             path: "Sources/Features/ProductList/ProductListMVVM/ProductListMVVMSwiftUI"
         ),
         .target(

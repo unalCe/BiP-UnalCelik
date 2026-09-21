@@ -1,0 +1,123 @@
+{
+  "trace": "baseline-cold-trace.trace",
+  "run": 4,
+  "started": "2026-09-21T18:26:18.575+03:00",
+  "device": "iPhone 12, iOS 26.4 (23E246)",
+  "template": "System Trace",
+  "duration_s": 11.231352,
+  "metrics": {
+    "products.fetch": {
+      "unit": "ms",
+      "count": 1,
+      "mean": 383.420375,
+      "p50": 383.420375,
+      "p90": 383.420375,
+      "max": 383.420375,
+      "outcomes": {
+        "completed": 1
+      },
+      "sources": {}
+    },
+    "list.timeToContent": {
+      "unit": "ms",
+      "count": 1,
+      "mean": 452.005625,
+      "p50": 452.005625,
+      "p90": 452.005625,
+      "max": 452.005625,
+      "outcomes": {
+        "completed": 1
+      },
+      "sources": {}
+    },
+    "image.load": {
+      "unit": "ms",
+      "count": 68,
+      "mean": 125.33598716176469,
+      "p50": 0.043833,
+      "p90": 516.129334,
+      "max": 2083.176541,
+      "outcomes": {
+        "completed": 68
+      },
+      "sources": {
+        "network": 12,
+        "inflight": 4,
+        "memory": 52
+      }
+    },
+    "image.network": {
+      "unit": "ms",
+      "count": 12,
+      "mean": 600.689625,
+      "p50": 300.926042,
+      "p90": 1206.529083,
+      "max": 2058.864709,
+      "outcomes": {
+        "completed": 12
+      },
+      "sources": {}
+    },
+    "image.decode": {
+      "unit": "ms",
+      "count": 12,
+      "mean": 15.809309166666667,
+      "p50": 9.064334,
+      "p90": 33.424958,
+      "max": 33.484917,
+      "outcomes": {
+        "completed": 12
+      },
+      "sources": {}
+    },
+    "image.decodeCPU": {
+      "unit": "ms",
+      "count": 12,
+      "mean": 13.841908333333334,
+      "p50": 7.8813,
+      "p90": 28.6503,
+      "max": 28.8432,
+      "outcomes": {
+        "completed": 12
+      },
+      "sources": {}
+    },
+    "image.prefetch": {
+      "unit": "ms",
+      "count": 30,
+      "mean": 43.6487889,
+      "p50": 0.236625,
+      "p90": 124.553375,
+      "max": 760.093791,
+      "outcomes": {
+        "completed": 30
+      },
+      "sources": {}
+    },
+    "image.visibleWait": {
+      "unit": "ms",
+      "count": 38,
+      "mean": 194.86266557894737,
+      "p50": 1.621666,
+      "p90": 769.690166,
+      "max": 2099.698334,
+      "outcomes": {
+        "completed": 38
+      },
+      "sources": {}
+    },
+    "scroll.hitchRatio": {
+      "unit": "ms/s",
+      "count": 7,
+      "mean": 0.0,
+      "p50": 0.0,
+      "p90": 0.0,
+      "max": 0.0,
+      "outcomes": {
+        "completed": 7
+      },
+      "sources": {}
+    }
+  },
+  "hangs": []
+}

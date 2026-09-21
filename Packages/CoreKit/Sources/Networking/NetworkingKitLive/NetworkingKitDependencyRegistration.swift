@@ -10,8 +10,6 @@ public enum NetworkingKitDependencyRegistration: DependencyRegistration {
         )
     }
 
-    /// Sized deliberately for image bytes. Anything that can change asks for
-    /// `HTTPCachePolicy.revalidate` at the endpoint so this cache cannot pin it.
     private static func makeSession() -> URLSession {
         let configuration = URLSessionConfiguration.default
         configuration.urlCache = URLCache(

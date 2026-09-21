@@ -108,14 +108,16 @@ public final class PerformanceHUD {
         let load = report[.imageLoad]
 
         let memoryHits = load?.tallies["source=memory"] ?? 0
-        let total = memoryHits + (load?.tallies["source=network"] ?? 0)
+        let total = load?.tallies.values.reduce(0, +) ?? 0
         let hitRate = total > 0 ? "\(memoryHits * 100 / total)%" : "-"
+        let prefetch = report[.imagePrefetch]?.outcomes ?? [:]
 
         label.text = [
             " scroll \(PerformanceReport.format(scroll?.last)) ms/s  p90 \(PerformanceReport.format(scroll?.p90)) ",
             " hitches \(hitch?.count ?? 0)  worst \(PerformanceReport.format(hitch?.max)) ms ",
             " img wait p50 \(PerformanceReport.format(wait?.p50))  p90 \(PerformanceReport.format(wait?.p90)) ms ",
-            " cache hit \(hitRate) ",
+            " cache hit \(hitRate)  inflight \(load?.tallies["source=inflight"] ?? 0) ",
+            " prefetch done \(prefetch["completed"] ?? 0)  cancelled \(prefetch["cancelled"] ?? 0) ",
         ].joined(separator: "\n")
         label.accessibilityValue = report.jsonString()
 

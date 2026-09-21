@@ -18,7 +18,12 @@ public enum ImageCacheKitDependencyRegistration: DependencyRegistration {
         let tracer = registeredTracer ?? NoopPerformanceTracer()
 
         let loader = ImageLoader(client: client, tracer: tracer)
+        let prefetcher = ImagePrefetcher(loader: loader, tracer: tracer)
+
         engine.register(value: loader as any ImageLoaderInterface, for: (any ImageLoaderInterface).self)
-        engine.register(value: loader as any ImagePrefetchingInterface, for: (any ImagePrefetchingInterface).self)
+        engine.register(
+            value: prefetcher as any ImagePrefetchingInterface,
+            for: (any ImagePrefetchingInterface).self
+        )
     }
 }

@@ -17,6 +17,9 @@ public enum PerformanceMetric: String, CaseIterable, Sendable, Codable {
     /// `image.decode` is time off-CPU: waiting on the hardware JPEG decoder,
     /// a lock, or a core. A large gap means more threads won't help.
     case imageDecodeCPU = "image.decodeCPU"
+    /// One prefetch, from the list asking to the image in cache. Outcomes
+    /// matter more than durations: many `.cancelled` means over-fetching.
+    case imagePrefetch = "image.prefetch"
     /// From a cell asking for an image to that image on screen: the time the
     /// user looks at a placeholder. The number prefetching should reduce.
     case imageVisibleWait = "image.visibleWait"
@@ -70,6 +73,8 @@ public extension PerformanceBudget {
         case .imageDecode: return .init(warning: 50, error: 150)
         // A downsampled thumbnail costs single-digit milliseconds on a device.
         case .imageDecodeCPU: return .init(warning: 30, error: 100)
+        // Off screen by definition; only a stuck prefetch is worth a line.
+        case .imagePrefetch: return .init(warning: 5_000, error: 15_000)
         // ~100 ms is where a delay stops reading as instant.
         case .imageVisibleWait: return .init(warning: 100, error: 500)
         // Two frames at 60 Hz, then six.
