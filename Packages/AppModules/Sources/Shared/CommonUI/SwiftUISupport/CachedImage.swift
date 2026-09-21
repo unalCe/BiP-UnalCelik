@@ -1,14 +1,17 @@
-import SwiftUI
 import ImageCacheKit
+import SwiftUI
 
 public struct CachedImage: View {
     private let url: URL?
+    private let maxPointSize: CGFloat
     private let loader: any ImageLoaderInterface
 
+    @Environment(\.displayScale) private var displayScale
     @State private var uiImage: UIImage?
 
-    public init(url: URL?, loader: any ImageLoaderInterface) {
+    public init(url: URL?, maxPointSize: CGFloat, loader: any ImageLoaderInterface) {
         self.url = url
+        self.maxPointSize = maxPointSize
         self.loader = loader
     }
 
@@ -22,9 +25,10 @@ public struct CachedImage: View {
         }
         .task(id: url) {
             guard let url else { return }
-            guard let data = try? await loader.data(for: url) else { return }
+            let request = ImageRequest(url: url, pointSize: maxPointSize, scale: displayScale)
+            guard let loaded = try? await loader.image(for: request) else { return }
             guard !Task.isCancelled else { return }
-            uiImage = UIImage(data: data)
+            uiImage = loaded
         }
     }
 }

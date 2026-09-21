@@ -81,23 +81,25 @@ let package = Package(
         ),
         .target(
             name: "ProductListMVVM",
-            dependencies: [
-                "ProductDomain",
-                "CommonKit",
-                .product(name: "ImageCacheKit", package: "CoreKit"),
-            ],
+            dependencies: ["ProductDomain", "CommonKit"],
             path: "Sources/Features/ProductList/ProductListMVVM",
             exclude: ["ProductListMVVMUIKit", "ProductListMVVMSwiftUI"]
         ),
         .target(
             name: "ProductListMVVMUIKit",
             dependencies: [
-                .product(name: "LayoutKit", package: "CoreKit"),"ProductListMVVM", "ProductListInterface", "CommonUI"],
+                "ProductListMVVM", "ProductListInterface", "CommonKit", "CommonUI",
+                .product(name: "LayoutKit", package: "CoreKit"),
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+            ],
             path: "Sources/Features/ProductList/ProductListMVVM/ProductListMVVMUIKit"
         ),
         .target(
             name: "ProductListMVVMSwiftUI",
-            dependencies: ["ProductListMVVM", "ProductListInterface", "CommonUI"],
+            dependencies: [
+                "ProductListMVVM", "ProductListInterface", "CommonUI",
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+            ],
             path: "Sources/Features/ProductList/ProductListMVVM/ProductListMVVMSwiftUI"
         ),
         .target(
@@ -187,6 +189,14 @@ let package = Package(
             name: "ProductListMVVMTests",
             dependencies: ["ProductListMVVM", "ProductRepositoryMocks"],
             path: "Tests/Features/ProductList/ProductListMVVMTests"
+        ),
+        .testTarget(
+            name: "ProductListMVVMUIKitTests",
+            dependencies: [
+                "ProductListMVVMUIKit", "ProductRepositoryMocks", "CommonKit",
+                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+            ],
+            path: "Tests/Features/ProductList/ProductListMVVMUIKitTests"
         ),
         .testTarget(
             name: "ProductListVIPERTests",

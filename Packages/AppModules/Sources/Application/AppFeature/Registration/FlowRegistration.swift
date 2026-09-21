@@ -46,7 +46,6 @@ public enum FlowRegistration {
             list = MVVMSwiftUIProductListModule(
                 fetchProducts: fetchProducts,
                 imageLoader: imageLoader,
-                prefetcher: prefetcher,
                 onSelectProduct: Self.push(detail)
             )
 

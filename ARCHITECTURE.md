@@ -67,14 +67,25 @@ the reasoning stays in one place.
 
 | Decision | Why |
 |---|---|
-| `ImagePrefetchingInterface` is separate from `ImageLoaderInterface` | a scheduling engine can be introduced later without touching every loader conformer |
-| `ImageCacheKit` is `Data`-shaped, not `UIImage`-shaped | keeps the module free of UIKit, so it tests without a simulator and serves both renderers |
+| `ImagePrefetchingInterface` is separate from `ImageLoaderInterface` | it paid off: `ImagePrefetcher` arrived as its own type wrapping the loader, and `ImageLoaderInterface` never changed. The loader loads one request; the prefetcher decides what to start and stop caring about |
+| `ImageCacheKit` is `UIImage`-shaped, not `Data`-shaped | **reversed.** It used to be `Data`-shaped to stay free of UIKit, but the "tests without a simulator" half of that argument died when both packages went iOS-only and `LayoutKit` pulled UIKit into CoreKit anyway. Returning `Data` also forced every renderer to decode for itself, which is exactly where the 21 MB-per-cell problem lived. `ImageCacheKit` is iOS infrastructure; Domain and Data still never import it |
+| `ImagePrefetcher` is a `final class`, not an `actor` | the constraint that used to sit on `ImageLoader` moved here with the conformance, it did not disappear: `ImagePrefetchingInterface`'s methods are synchronous and nonisolated because `UICollectionViewDataSourcePrefetching` is, and an actor-isolated synchronous method cannot witness that. `nonisolated` shims hopping through `Task` would compile but lose ordering, so a cancel could land before the prefetch it was meant to cancel |
+| Scrolling away and back does not re-download | the cancelled prefetch's bytes are already in `NSCache`. `URLSession.data(for:)` cannot resume a partial transfer, so aborting at 90% would discard the work and still cost a full round trip on the way back |
+| One shared task per in-flight `ImageRequest` | without it a prefetch and the cell that catches up download the same bytes twice. At ~820 ms per image the overlap is the common case. Measured: 16 loader requests produced 12 downloads |
+| The view controller owns prefetching, not the ViewModel | pixel size is renderer knowledge. `ProductListViewModel` no longer imports `ImageCacheKit` at all |
+| `cancelPrefetch` releases interest but does not abort | cancellation does not propagate from an awaiter to an unstructured `Task`, and aborting shared work could kill a visible cell's load that joined the same request. The bytes land in the cache instead |
+| Nothing computes pixel sizes by hand | `ImageRequest.init(url:pointSize:scale:)` owns the arithmetic and the scale fallback; `ProductListLayout` owns the cell geometry both the layout and the prefetcher read. A prefetch and the cell it warms cannot compute different keys by construction — previously only a test held that in line |
+| The image cache key is `(URL, bucketed pixel size)` | a list thumbnail and a detail image are legitimately different entries. Sizes round up to a 128px step so rotation and split-view reuse one entry instead of minting one per pixel. Powers of two were rejected: a 555px cell would decode at 1024px, 3.4x the pixels it can show |
+| `ImageLoader` is a `final class`, not an `actor` | its only mutable state lives in the `InFlightRegistry` actor, and `NSCache` is already thread-safe, so an unisolated loader means a cache hit costs no actor hop |
+| Downsampling is a plain `nonisolated async` func, not `Task.detached` | both run off the caller's actor, but only the former inherits cancellation. Detached, a scrolled-away cell would decode 5 megapixels to completion for an image nobody sees |
+| `HTTPCachePolicy` exists because `URLCache` does | these endpoints send no `Cache-Control` and a 2015 `Last-Modified`, so heuristic freshness would pin the product list for about a year. Images take `.standard` and stay cached; anything that can change takes `.revalidate` and accepts a 304 |
 | `CachedImage` (SwiftUI) takes an injected loader rather than using `AsyncImage` | `AsyncImage` has no cache shared with the UIKit path, and third-party libraries are ruled out |
 | The VIPER Router's destination is injected, not imported | `ProductListVIPER` must not link `ProductDetailVIPER`; see §7 |
 | `ProductDetailRouter` needs no `@Dependency` | the detail screen is a leaf and navigates nowhere new |
 | Registrations are shared instances | the repository and image loader own their caches — rebuilding per resolve would drop both |
 | `DependencyEngine` is clean-room | the pattern is published; the reference implementation is copyrighted and was not copied |
 | Both packages are iOS-only | `LayoutKit` needs UIKit; declaring macOS would have meant `#if canImport(UIKit)` guards across its files for no benefit beyond a faster `swift test` |
+| The diffable item identifier is `Product.id`, not `ProductDisplayModel` | identity stays stable when content changes, so a price edit is a `reconfigureItems` on the live cell rather than a delete + insert that tears the cell down and reloads its image |
 | `LayoutKit` lives in CoreKit, not AppModules | it knows nothing about products — any UIKit app could take it |
 
 ### Source grouping
@@ -440,13 +451,25 @@ as a worked example for `ProductDetail`.
 
 ---
 
+## 9a. Known gaps
+
+Deferred deliberately, recorded here so they do not live as scattered `TODO`s.
+
+| Gap | Why it matters |
+|---|---|
+| No concurrency ceiling on decodes | **measured twice as not worth building.** A limiter at 2 moved peak footprint by nothing (41.1/46.8 MB unbounded vs 41.4/44.0/38.4 MB limited): `URLSession` caps connections per host at ~6 and `CGImageSourceCreateThumbnailAtIndex` decodes subsampled, so decodes never stack. `CG raster data` sits at 256 KB resident. Revisited when prefetching landed — UIKit queued 4 prefetches, not dozens, and the answer did not change |
+| Prefetch cancellation is not reference-counted | `cancelPrefetch` and `CachedImageView.cancel()` drop the requester, not the shared download — cancellation does not propagate from an awaiter to an unstructured `Task`, and aborting could break a visible cell that joined the same request. Counting interested parties would allow a true abort. Worth it at pagination scale, not at twelve items |
+| No disk tier for decoded images | deliberate. Encoded bytes are `URLCache`'s job; decoded bitmaps stay in memory under `NSCache` |
+
+---
+
 ## 10. Plan
 
 | Day | Work |
 |---|---|
 | 1 | Package skeletons, `ProductDomain`, `NetworkingKit` + Live + Mocks, `DependencyEngine` |
 | 2 | `PersistenceKit` Core Data stack, `ImageCacheKit`, `ProductRepositoryLive` + cache policy |
-| 3 | MVVM-C · UIKit end to end — compositional layout, diffable, prefetch, detail screen |
+| 3 | MVVM-C · UIKit end to end — compositional layout, diffable, prefetch, detail screen. **List done; detail screen and the image pipeline in §9a outstanding.** |
 | 4 am | SwiftUI renderer (reuses the ViewModels) |
 | 4 pm–5 am | VIPER · UIKit both modules |
 | 5 pm | Flow picker, demo app, README, test pass |

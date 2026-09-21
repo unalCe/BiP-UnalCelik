@@ -28,7 +28,9 @@ public struct ProductDetailView: View {
         case .loaded(let item):
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    CachedImage(url: item.imageURL, loader: imageLoader)
+                    CachedImage(url: item.imageURL,
+                                maxPointSize: 280,
+                                loader: imageLoader)
                         .frame(maxWidth: .infinity)
                         .frame(height: 280)
                         .clipped()
