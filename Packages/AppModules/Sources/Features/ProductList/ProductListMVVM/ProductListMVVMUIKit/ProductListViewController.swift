@@ -4,6 +4,7 @@ import CommonUI
 import ImageCacheKit
 import ProductListMVVM
 import LayoutKit
+import PerformanceKit
 import UIKit
 
 @MainActor
@@ -18,6 +19,11 @@ public final class ProductListViewController: UIViewController {
 
     private var itemsByID: [String: ProductDisplayModel] = [:]
     private var hasAppliedSnapshot = false
+
+    private let tracer: any PerformanceTracing
+    private let scrollMonitor: ScrollHitchMonitor
+    /// `viewDidLoad` to the first snapshot, or to the first failure.
+    private var timeToContent: PerformanceInterval?
 
     // MARK: - Subviews
     private lazy var collectionView: UICollectionView = {
@@ -51,11 +57,15 @@ public final class ProductListViewController: UIViewController {
     }
 
     public init(viewModel: ProductListViewModel,
-                imageLoader: any ImageLoaderInterface) {
+                imageLoader: any ImageLoaderInterface,
+                tracer: any PerformanceTracing = NoopPerformanceTracer()) {
         self.viewModel = viewModel
+        self.tracer = tracer
+        self.scrollMonitor = ScrollHitchMonitor(tracer: tracer)
         self.cellRegistration = UICollectionView.CellRegistration { cell, _, item in
             cell.configure(with: item,
-                           imageLoader: imageLoader)
+                           imageLoader: imageLoader,
+                           tracer: tracer)
         }
         super.init(nibName: nil, bundle: nil)
         title = "Products"
@@ -67,6 +77,7 @@ public final class ProductListViewController: UIViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
+        timeToContent = tracer.begin(.listTimeToContent)
         setUpHierarchy()
         bind()
         viewModel.onAppear()
@@ -96,9 +107,17 @@ public final class ProductListViewController: UIViewController {
             apply(items)
         case .empty:
             stateView.showMessage("No products available.", retryable: true)
+            endTimeToContent(.completed, count: 0)
         case .failed(let error):
             stateView.showMessage("\(error.title)\n\(error.message)", retryable: error.isRetryable)
+            endTimeToContent(.failed, count: 0)
         }
+    }
+
+    private func endTimeToContent(_ outcome: PerformanceOutcome, count: Int) {
+        guard let timeToContent else { return }
+        self.timeToContent = nil
+        tracer.end(timeToContent, outcome: outcome, attributes: ["count": "\(count)"])
     }
 
     private func apply(_ items: [ProductDisplayModel]) {
@@ -121,6 +140,7 @@ public final class ProductListViewController: UIViewController {
 
         dataSource.apply(snapshot, animatingDifferences: hasAppliedSnapshot)
         hasAppliedSnapshot = true
+        endTimeToContent(.completed, count: unique.count)
     }
 }
 
@@ -132,5 +152,19 @@ extension ProductListViewController: UICollectionViewDelegate {
         collectionView.deselectItem(at: indexPath, animated: true)
         guard let id = dataSource.itemIdentifier(for: indexPath) else { return }
         viewModel.didSelectItem(id: id)
+    }
+
+    // MARK: Scroll performance
+
+    public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        scrollMonitor.scrollViewWillBeginDragging()
+    }
+
+    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        scrollMonitor.scrollViewDidEndDragging(willDecelerate: decelerate)
+    }
+
+    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        scrollMonitor.scrollViewDidEndDecelerating()
     }
 }

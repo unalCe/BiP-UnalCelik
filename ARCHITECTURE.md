@@ -459,6 +459,69 @@ Deferred deliberately, recorded here so they do not live as scattered `TODO`s.
 
 ---
 
+## 9b. Performance instrumentation
+
+`PerformanceKit` (CoreKit) measures load speed and scroll smoothness, so a
+change like prefetching can be judged by numbers rather than feel. Same
+split as every kit: `PerformanceKit` is the `PerformanceTracing` protocol,
+metric names and budgets; `PerformanceKitLive` the tracer, report and HUD;
+`PerformanceKitMocks` a recording tracer for tests. Everything defaults to
+`NoopPerformanceTracer`, so instrumented code never checks for nil.
+
+| Metric | Measured in | Read it as |
+|---|---|---|
+| `products.fetch` | `ProductListViewModel.load()` | data layer, cache or remote |
+| `list.timeToContent` | list `viewDidLoad` → first snapshot | screen load |
+| `image.load`, tagged `source=memory\|network` | `ImageLoader.image(for:)` | the tallies are the cache hit rate |
+| `image.network` | nested inside `image.load` | transfer, plus waiting to resume on the cooperative pool |
+| `image.decode` / `image.decodeCPU` | `CGImageDownsampler`, around `CGImageSourceCreateThumbnailAtIndex` only | wall vs this thread's CPU time. The gap is time off-CPU: on device, mostly waiting on the hardware JPEG decoder |
+| `image.visibleWait` | `CachedImageView`, `setImage` → image shown | **how long the user sees a placeholder — the number prefetching should cut** |
+| `scroll.hitch` | `ScrollHitchMonitor`, per late frame | stutter, live |
+| `scroll.hitchRatio` | per drag + deceleration | hitch ms per second: < 5 good, > 10 critical |
+
+Only `.completed` intervals feed the percentiles. Cancelled ones (a cell
+reused before its image arrived) are counted separately, because that is
+wasted work rather than a fast load.
+
+Every sample goes to an `os_signpost` (Instruments ▸ Points of Interest, on
+the same timeline as Animation Hitches), to an in-memory aggregator, and,
+when it breaks its `PerformanceBudget`, to the console as `⚠️` or `🛑`,
+rate-limited to one line per metric per second. The full report is logged
+when the app goes to the background.
+
+`ScrollHitchMonitor` compares each `CADisplayLink` tick's `timestamp` with the
+previous tick's `targetTimestamp`. It stands in for Instruments, it does not
+replace it: it sees the main thread being late, not a render-server miss.
+
+Launch arguments (scheme ▸ Run ▸ Arguments):
+
+| Argument | Effect |
+|---|---|
+| `-perfTracing YES\|NO` | tracing on or off. Default: on in DEBUG, off in Release |
+| `-perfHUD YES` | overlay showing the last scroll ratio, image wait, cache hit rate |
+| `-perfInjectStallMs 60` | DEBUG only: stall the main thread every 10th frame |
+
+**UI tests.** `ScrollPerformanceUITests` gates on the app's own numbers: it
+reads the report from the HUD's accessibility value and fails when the
+session p90 hitch ratio goes over the 10 ms/s error budget. A canary test runs
+the same scroll with `-perfInjectStallMs 60` and *requires* the gate to trip,
+so a green gate can't mean "measuring nothing". Alongside them,
+`XCTOSSignpostMetric.scroll*Metric` gives Apple's own numbers. Those fail only
+against a per-device baseline set in Xcode, and on the simulator they report
+duration only; hitch ratios need a device.
+
+**From a trace.** Instruments' Points of Interest ▸ Summary: Intervals gives
+count and average per signpost, but no percentiles and nothing for event
+values. `Scripts/perf_summary.py <trace>` computes p50/p90, cache hit rate and
+hangs from any `.trace`; `Performance/` holds the recorded baselines and the
+scenario for recording comparable runs.
+
+Simulator hitch numbers are a smoke test. The Mac GPU renders the frames. To
+compare prefetch on and off, use a device, a cold cache and Network Link
+Conditioner, and diff the two reports.
+
+---
+
 ## 10. Plan
 
 | Day | Work |

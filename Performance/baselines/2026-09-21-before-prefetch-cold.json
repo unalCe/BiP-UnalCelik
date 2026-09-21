@@ -1,0 +1,108 @@
+{
+  "trace": "baseline-cold-trace.trace",
+  "device": "iPhone 12, iOS 26.4 (23E246)",
+  "template": "System Trace",
+  "duration_s": 10.603261,
+  "metrics": {
+    "products.fetch": {
+      "unit": "ms",
+      "count": 1,
+      "mean": 429.565041,
+      "p50": 429.565041,
+      "p90": 429.565041,
+      "max": 429.565041,
+      "outcomes": {
+        "completed": 1
+      },
+      "sources": {}
+    },
+    "list.timeToContent": {
+      "unit": "ms",
+      "count": 1,
+      "mean": 506.292041,
+      "p50": 506.292041,
+      "p90": 506.292041,
+      "max": 506.292041,
+      "outcomes": {
+        "completed": 1
+      },
+      "sources": {}
+    },
+    "image.load": {
+      "unit": "ms",
+      "count": 40,
+      "mean": 170.6473626,
+      "p50": 0.047542,
+      "p90": 509.65525,
+      "max": 1637.909041,
+      "outcomes": {
+        "completed": 40
+      },
+      "sources": {
+        "network": 12,
+        "memory": 28
+      }
+    },
+    "image.network": {
+      "unit": "ms",
+      "count": 12,
+      "mean": 553.2549236666666,
+      "p50": 360.167625,
+      "p90": 981.632875,
+      "max": 1608.17375,
+      "outcomes": {
+        "completed": 12
+      },
+      "sources": {}
+    },
+    "image.decode": {
+      "unit": "ms",
+      "count": 12,
+      "mean": 15.235680416666668,
+      "p50": 8.737542,
+      "p90": 29.473208,
+      "max": 48.8875,
+      "outcomes": {
+        "completed": 12
+      },
+      "sources": {}
+    },
+    "image.decodeCPU": {
+      "unit": "ms",
+      "count": 12,
+      "mean": 12.566116666666666,
+      "p50": 7.1155,
+      "p90": 24.7551,
+      "max": 37.0596,
+      "outcomes": {
+        "completed": 12
+      },
+      "sources": {}
+    },
+    "image.visibleWait": {
+      "unit": "ms",
+      "count": 40,
+      "mean": 174.101508275,
+      "p50": 1.475459,
+      "p90": 517.036791,
+      "max": 1648.107583,
+      "outcomes": {
+        "completed": 40
+      },
+      "sources": {}
+    },
+    "scroll.hitchRatio": {
+      "unit": "ms/s",
+      "count": 7,
+      "mean": 0.0,
+      "p50": 0.0,
+      "p90": 0.0,
+      "max": 0.0,
+      "outcomes": {
+        "completed": 7
+      },
+      "sources": {}
+    }
+  },
+  "hangs": []
+}

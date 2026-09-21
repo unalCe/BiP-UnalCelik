@@ -1,6 +1,7 @@
 import CommonKit
 import ImageCacheKit
 import ImageCacheKitMocks
+import PerformanceKitMocks
 import ProductDomain
 import ProductListMVVM
 import ProductListMVVMUIKit
@@ -39,15 +40,54 @@ final class ProductListViewControllerTests: XCTestCase {
         XCTAssertEqual(selected, ["6_id_is_a_string"])
     }
 
+    func test_firstSnapshot_endsTimeToContent() async {
+        let tracer = RecordingPerformanceTracer()
+        let (sut, _) = makeSUT(tracer: tracer)
+        sut.loadViewIfNeeded()
+        await sut.settle()
+
+        let samples = tracer.samples(for: .listTimeToContent)
+        XCTAssertEqual(samples.map(\.outcome), [.completed])
+        XCTAssertEqual(samples.first?.attributes["count"], "\(Product.fixtures.count)")
+    }
+
+    func test_failure_endsTimeToContentAsFailed() async {
+        let tracer = RecordingPerformanceTracer()
+        let (sut, _) = makeSUT(
+            repository: StubProductRepository(products: .failure(DomainError.offline)),
+            tracer: tracer
+        )
+        sut.loadViewIfNeeded()
+        await sut.settle()
+
+        XCTAssertEqual(tracer.samples(for: .listTimeToContent).map(\.outcome), [.failed])
+    }
+
+    func test_visibleCells_traceTheirImageWait() async {
+        let tracer = RecordingPerformanceTracer()
+        let (sut, _) = makeSUT(tracer: tracer)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        window.rootViewController = sut
+        window.makeKeyAndVisible()
+        await sut.settle()
+        sut.view.layoutIfNeeded()
+        await sut.settle()
+
+        let waits = tracer.samples(for: .imageVisibleWait)
+        XCTAssertFalse(waits.isEmpty, "laid-out cells should have measured their image")
+        XCTAssertTrue(waits.allSatisfy { $0.outcome == .completed })
+    }
+
     // MARK: - Helpers
 
     private func makeSUT(
         repository: StubProductRepository = StubProductRepository(),
-        loader: MockImageLoader = MockImageLoader()
+        loader: MockImageLoader = MockImageLoader(),
+        tracer: RecordingPerformanceTracer = RecordingPerformanceTracer()
     ) -> (ProductListViewController, ProductListViewModel) {
         let viewModel = ProductListViewModel(fetchProducts: FetchProducts(repository: repository))
         return (
-            ProductListViewController(viewModel: viewModel, imageLoader: loader),
+            ProductListViewController(viewModel: viewModel, imageLoader: loader, tracer: tracer),
             viewModel
         )
     }

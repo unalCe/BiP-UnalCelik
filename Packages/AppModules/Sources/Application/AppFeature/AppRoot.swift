@@ -1,4 +1,5 @@
 import DependencyEngine
+import PerformanceKitLive
 import SwiftUI
 import UIKit
 
@@ -8,6 +9,13 @@ public enum AppRoot {
     public static func bootstrap(engine: DependencyEngine = .shared) {
         AppDependencyRegistration.register(to: engine)
         FlowRegistration.register(.mvvmUIKit, to: engine)
+
+        let performance = PerformanceConfiguration.fromLaunchArguments()
+        if performance.showsHUD,
+           let tracer: PerformanceTracer = engine.resolve(PerformanceTracer.self) {
+            PerformanceHUD.install(tracer: tracer)
+        }
+        MainThreadStallInjector.start(milliseconds: performance.injectedStallMilliseconds)
     }
 
     public static func makeRootViewController(engine: DependencyEngine = .shared) -> UIViewController {

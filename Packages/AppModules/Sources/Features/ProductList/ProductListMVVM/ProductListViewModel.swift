@@ -2,6 +2,7 @@ import Combine
 import CommonKit
 import Foundation
 import ImageCacheKit
+import PerformanceKit
 import ProductDomain
 
 @MainActor
@@ -14,6 +15,7 @@ public final class ProductListViewModel: ObservableObject {
     private let mapper: ProductDisplayMapper
     private let errorPresenter: ErrorPresenter
     private let prefetcher: (any ImagePrefetchingInterface)?
+    private let tracer: any PerformanceTracing
 
     private var items: [ProductDisplayModel] = []
     private var loadTask: Task<Void, Never>?
@@ -22,12 +24,14 @@ public final class ProductListViewModel: ObservableObject {
         fetchProducts: any FetchProductsUseCase,
         mapper: ProductDisplayMapper = ProductDisplayMapper(),
         errorPresenter: ErrorPresenter = ErrorPresenter(),
-        prefetcher: (any ImagePrefetchingInterface)? = nil
+        prefetcher: (any ImagePrefetchingInterface)? = nil,
+        tracer: any PerformanceTracing = NoopPerformanceTracer()
     ) {
         self.fetchProducts = fetchProducts
         self.mapper = mapper
         self.errorPresenter = errorPresenter
         self.prefetcher = prefetcher
+        self.tracer = tracer
     }
 
     // MARK: - Input
@@ -69,7 +73,9 @@ public final class ProductListViewModel: ObservableObject {
         loadTask = Task { [weak self] in
             guard let self else { return }
             do {
-                let products = try await self.fetchProducts.execute()
+                let products = try await self.tracer.measure(.productsFetch) {
+                    try await self.fetchProducts.execute()
+                }
                 guard !Task.isCancelled else { return }
                 self.items = self.mapper.map(products)
                 self.state = self.items.isEmpty ? .empty : .loaded(self.items)

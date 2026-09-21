@@ -1,4 +1,5 @@
 import CommonKit
+import PerformanceKitMocks
 import ProductDomain
 import ProductRepositoryMocks
 import XCTest
@@ -66,6 +67,32 @@ final class ProductListViewModelTests: XCTestCase {
         sut.didSelectItem(at: 1)
 
         XCTAssertEqual(selected, "6_id_is_a_string")
+    }
+
+    func test_load_tracesTheFetch() async {
+        let tracer = RecordingPerformanceTracer()
+        let sut = ProductListViewModel(
+            fetchProducts: FetchProducts(repository: StubProductRepository()),
+            tracer: tracer
+        )
+
+        sut.onAppear()
+        await sut.settle()
+
+        XCTAssertEqual(tracer.samples(for: .productsFetch).map(\.outcome), [.completed])
+    }
+
+    func test_failedLoad_tracesAFailedFetch() async {
+        let tracer = RecordingPerformanceTracer()
+        let sut = ProductListViewModel(
+            fetchProducts: FetchProducts(repository: StubProductRepository(products: .failure(DomainError.offline))),
+            tracer: tracer
+        )
+
+        sut.onAppear()
+        await sut.settle()
+
+        XCTAssertEqual(tracer.samples(for: .productsFetch).map(\.outcome), [.failed])
     }
 
     func test_onAppear_isIgnoredOnceLoaded() async {

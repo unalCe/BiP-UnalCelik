@@ -153,13 +153,13 @@ These check the project without launching it — useful for confirming it is
 sound without opening Xcode.
 
 ```bash
-# 28 tests across 5 bundles.
+# 45 tests across 7 bundles.
 cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
 ```bash
-# 44 tests across 7 bundles, on a simulator.
+# 52 tests across 7 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -172,9 +172,20 @@ xcodebuild -workspace TurkcellCase.xcworkspace -scheme TurkcellCase-UnalCelik \
 
 None of the three installs or runs the app — see **Running** above for that.
 
+```bash
+# Scroll-performance UI tests: hitch budget gate, its canary, and
+# XCTOSSignpostMetric scroll metrics. Launches the app against the live API.
+xcodebuild -workspace TurkcellCase.xcworkspace -scheme TurkcellCase-UnalCelik \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -only-testing:TurkcellCase-UnalCelikUITests/ScrollPerformanceUITests test
+```
+
+Performance tracing launch arguments (`-perfHUD YES`, `-perfTracing NO`,
+`-perfInjectStallMs 60`) are described in ARCHITECTURE.md §9b.
+
 ## Status
 
 Skeleton. Every boundary, both packages, all three flows wired and compiling;
-**72 tests green** (44 AppModules + 28 CoreKit). Views are state-machine `switch`es with `TODO` markers for
+**97 tests green** (52 AppModules + 45 CoreKit). Views are state-machine `switch`es with `TODO` markers for
 layout. Core Data and the image cache have working in-memory stand-ins behind
 their final interfaces. See ARCHITECTURE.md §10 for the day plan.

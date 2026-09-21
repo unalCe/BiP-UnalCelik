@@ -1,5 +1,6 @@
 import DependencyEngine
 import ImageCacheKit
+import PerformanceKit
 import ProductDetailInterface
 import ProductDetailMVVMSwiftUI
 import ProductDetailMVVMUIKit
@@ -25,6 +26,11 @@ public enum FlowRegistration {
             fatalError("Run AppDependencyRegistration before registering a flow")
         }
 
+        // Typed apart from the `??`: inline, `resolve` infers its generic as
+        // `NoopPerformanceTracer`, the cast fails, and the no-op always wins.
+        let registeredTracer: (any PerformanceTracing)? = engine.resolve((any PerformanceTracing).self)
+        let tracer = registeredTracer ?? NoopPerformanceTracer()
+
         let fetchProducts = FetchProducts(repository: repository)
         let fetchDetail = FetchProductDetail(repository: repository)
 
@@ -38,6 +44,7 @@ public enum FlowRegistration {
                 fetchProducts: fetchProducts,
                 imageLoader: imageLoader,
                 prefetcher: prefetcher,
+                tracer: tracer,
                 onSelectProduct: Self.push(detail)
             )
 

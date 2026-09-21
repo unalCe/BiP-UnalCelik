@@ -1,4 +1,5 @@
 import ImageCacheKit
+import PerformanceKit
 import ProductDomain
 import ProductListInterface
 import ProductListMVVM
@@ -9,28 +10,32 @@ public struct MVVMUIKitProductListModule: ProductListInterface {
     private let fetchProducts: any FetchProductsUseCase
     private let imageLoader: any ImageLoaderInterface
     private let prefetcher: any ImagePrefetchingInterface
+    private let tracer: any PerformanceTracing
     private let onSelectProduct: (String, UINavigationController?) -> Void
 
     public init(
         fetchProducts: any FetchProductsUseCase,
         imageLoader: any ImageLoaderInterface,
         prefetcher: any ImagePrefetchingInterface,
+        tracer: any PerformanceTracing = NoopPerformanceTracer(),
         onSelectProduct: @escaping (String, UINavigationController?) -> Void
     ) {
         self.fetchProducts = fetchProducts
         self.imageLoader = imageLoader
         self.prefetcher = prefetcher
+        self.tracer = tracer
         self.onSelectProduct = onSelectProduct
     }
 
     public func createModule(navigationController: UINavigationController?) -> UIViewController {
         let viewModel = ProductListViewModel(
             fetchProducts: fetchProducts,
-            prefetcher: prefetcher
+            prefetcher: prefetcher,
+            tracer: tracer
         )
         viewModel.onSelectProduct = { [onSelectProduct] id in
             onSelectProduct(id, navigationController)
         }
-        return ProductListViewController(viewModel: viewModel, imageLoader: imageLoader)
+        return ProductListViewController(viewModel: viewModel, imageLoader: imageLoader, tracer: tracer)
     }
 }

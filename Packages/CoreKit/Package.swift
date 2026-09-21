@@ -25,6 +25,10 @@ let package = Package(
         .library(name: "ImageCacheKit", targets: ["ImageCacheKit"]),
         .library(name: "ImageCacheKitLive", targets: ["ImageCacheKitLive"]),
         .library(name: "ImageCacheKitMocks", targets: ["ImageCacheKitMocks"]),
+
+        .library(name: "PerformanceKit", targets: ["PerformanceKit"]),
+        .library(name: "PerformanceKitLive", targets: ["PerformanceKitLive"]),
+        .library(name: "PerformanceKitMocks", targets: ["PerformanceKitMocks"]),
     ],
     targets: [
         .target(
@@ -77,13 +81,29 @@ let package = Package(
         ),
         .target(
             name: "ImageCacheKitLive",
-            dependencies: ["ImageCacheKit", "NetworkingKit", "DependencyEngine"],
+            dependencies: ["ImageCacheKit", "NetworkingKit", "PerformanceKit", "DependencyEngine"],
             path: "Sources/ImageLoading/ImageCacheKitLive"
         ),
         .target(
             name: "ImageCacheKitMocks",
             dependencies: ["ImageCacheKit"],
             path: "Sources/ImageLoading/ImageCacheKitMocks"
+        ),
+
+        // ── Performance ──────────────────────────────────────────────────
+        .target(
+            name: "PerformanceKit",
+            path: "Sources/Performance/PerformanceKit"
+        ),
+        .target(
+            name: "PerformanceKitLive",
+            dependencies: ["PerformanceKit", "DependencyEngine"],
+            path: "Sources/Performance/PerformanceKitLive"
+        ),
+        .target(
+            name: "PerformanceKitMocks",
+            dependencies: ["PerformanceKit"],
+            path: "Sources/Performance/PerformanceKitMocks"
         ),
 
         // ── Tests ────────────────────────────────────────────────────────
@@ -109,8 +129,18 @@ let package = Package(
         ),
         .testTarget(
             name: "ImageCacheKitLiveTests",
-            dependencies: ["ImageCacheKitLive", "NetworkingKitMocks"],
+            dependencies: ["ImageCacheKitLive", "NetworkingKitMocks", "PerformanceKitMocks"],
             path: "Tests/ImageLoading/ImageCacheKitLiveTests"
+        ),
+        .testTarget(
+            name: "PerformanceKitTests",
+            dependencies: ["PerformanceKit"],
+            path: "Tests/Performance/PerformanceKitTests"
+        ),
+        .testTarget(
+            name: "PerformanceKitLiveTests",
+            dependencies: ["PerformanceKitLive"],
+            path: "Tests/Performance/PerformanceKitLiveTests"
         ),
     ],
     swiftLanguageModes: [.v5]

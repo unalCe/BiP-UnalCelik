@@ -70,6 +70,7 @@ let package = Package(
                 .product(name: "LayoutKit", package: "CoreKit"),
                 "CommonKit",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
+                .product(name: "PerformanceKit", package: "CoreKit"),
             ],
             path: "Sources/Shared/CommonUI"
         ),
@@ -85,6 +86,7 @@ let package = Package(
                 "ProductDomain",
                 "CommonKit",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
+                .product(name: "PerformanceKit", package: "CoreKit"),
             ],
             path: "Sources/Features/ProductList/ProductListMVVM",
             exclude: ["ProductListMVVMUIKit", "ProductListMVVMSwiftUI"]
@@ -95,6 +97,7 @@ let package = Package(
                 "ProductListMVVM", "ProductListInterface", "CommonKit", "CommonUI",
                 .product(name: "LayoutKit", package: "CoreKit"),
                 .product(name: "ImageCacheKit", package: "CoreKit"),
+                .product(name: "PerformanceKit", package: "CoreKit"),
             ],
             path: "Sources/Features/ProductList/ProductListMVVM/ProductListMVVMUIKit"
         ),
@@ -162,6 +165,8 @@ let package = Package(
                 .product(name: "NetworkingKitLive", package: "CoreKit"),
                 .product(name: "PersistenceKitLive", package: "CoreKit"),
                 .product(name: "ImageCacheKitLive", package: "CoreKit"),
+                .product(name: "PerformanceKit", package: "CoreKit"),
+                .product(name: "PerformanceKitLive", package: "CoreKit"),
             ],
             path: "Sources/Application/AppFeature"
         ),
@@ -188,7 +193,10 @@ let package = Package(
         ),
         .testTarget(
             name: "ProductListMVVMTests",
-            dependencies: ["ProductListMVVM", "ProductRepositoryMocks"],
+            dependencies: [
+                "ProductListMVVM", "ProductRepositoryMocks",
+                .product(name: "PerformanceKitMocks", package: "CoreKit"),
+            ],
             path: "Tests/Features/ProductList/ProductListMVVMTests"
         ),
         .testTarget(
@@ -196,6 +204,7 @@ let package = Package(
             dependencies: [
                 "ProductListMVVMUIKit", "ProductRepositoryMocks", "CommonKit",
                 .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+                .product(name: "PerformanceKitMocks", package: "CoreKit"),
             ],
             path: "Tests/Features/ProductList/ProductListMVVMUIKitTests"
         ),

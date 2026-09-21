@@ -1,6 +1,7 @@
 import ImageCacheKit
 import NetworkingKit
 import NetworkingKitMocks
+import PerformanceKitMocks
 import UIKit
 import XCTest
 @testable import ImageCacheKitLive
@@ -37,6 +38,40 @@ final class ImageLoaderTests: XCTestCase {
         XCTAssertEqual(client.sendCount, 1)
         XCTAssertEqual(downsampler.callCount, 1)
         XCTAssertEqual(cache.insertCount, 1)
+    }
+
+    func test_tracing_tagsTheSourceOfEachLoad() async throws {
+        let tracer = RecordingPerformanceTracer()
+        let client = MockHTTPClient(always: .ok(Data("network-bytes".utf8)))
+        let sut = ImageLoader(
+            client: client,
+            cache: StubImageCache(),
+            downsampler: StubDownsampler(),
+            tracer: tracer
+        )
+
+        _ = try await sut.image(for: request)
+        _ = try await sut.image(for: request)
+
+        XCTAssertEqual(tracer.samples(for: .imageLoad).map { $0.attributes["source"] }, ["network", "memory"])
+        XCTAssertEqual(tracer.samples(for: .imageNetwork).count, 1)
+        XCTAssertTrue(tracer.openIntervals.isEmpty)
+    }
+
+    func test_tracing_closesIntervalsOnFailure() async {
+        let tracer = RecordingPerformanceTracer()
+        let sut = ImageLoader(
+            client: MockHTTPClient(always: .offline),
+            cache: StubImageCache(),
+            downsampler: StubDownsampler(),
+            tracer: tracer
+        )
+
+        _ = try? await sut.image(for: request)
+
+        XCTAssertEqual(tracer.samples(for: .imageLoad).map(\.outcome), [.failed])
+        XCTAssertEqual(tracer.samples(for: .imageNetwork).map(\.outcome), [.failed])
+        XCTAssertTrue(tracer.openIntervals.isEmpty)
     }
 
     func test_transportFailure_propagates() async {

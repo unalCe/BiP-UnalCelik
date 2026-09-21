@@ -2,6 +2,7 @@ import CommonKit
 import CommonUI
 import ImageCacheKit
 import LayoutKit
+import PerformanceKit
 import UIKit
 
 @MainActor
@@ -23,10 +24,11 @@ public final class ProductListCell: UICollectionViewCell {
     private var productImageView: CachedImageView?
 
     public func configure(with item: ProductDisplayModel,
-                          imageLoader: any ImageLoaderInterface) {
+                          imageLoader: any ImageLoaderInterface,
+                          tracer: any PerformanceTracing = NoopPerformanceTracer()) {
         titleLabel.text = item.title
         priceLabel.text = item.formattedPrice
-        imageView(using: imageLoader).setImage(from: item.imageURL)
+        imageView(using: imageLoader, tracer: tracer).setImage(from: item.imageURL)
     }
 
     public override func prepareForReuse() {
@@ -38,10 +40,11 @@ public final class ProductListCell: UICollectionViewCell {
         priceLabel.text = nil
     }
 
-    private func imageView(using loader: any ImageLoaderInterface) -> CachedImageView {
+    private func imageView(using loader: any ImageLoaderInterface,
+                           tracer: any PerformanceTracing) -> CachedImageView {
         if let productImageView { return productImageView }
 
-        let imageView = CachedImageView(loader: loader)
+        let imageView = CachedImageView(loader: loader, tracer: tracer)
         imageView.layer.cornerRadius = 8
         imageView.layer.cornerCurve = .continuous
         productImageView = imageView
