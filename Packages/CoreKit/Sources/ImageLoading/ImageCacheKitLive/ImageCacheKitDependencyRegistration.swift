@@ -11,7 +11,12 @@ public enum ImageCacheKitDependencyRegistration: DependencyRegistration {
         }
 
         let loader = ImageLoader(client: client)
+        let prefetcher = ImagePrefetcher(loader: loader)
+
         engine.register(value: loader as any ImageLoaderInterface, for: (any ImageLoaderInterface).self)
-        engine.register(value: loader as any ImagePrefetchingInterface, for: (any ImagePrefetchingInterface).self)
+        engine.register(
+            value: prefetcher as any ImagePrefetchingInterface,
+            for: (any ImagePrefetchingInterface).self
+        )
     }
 }

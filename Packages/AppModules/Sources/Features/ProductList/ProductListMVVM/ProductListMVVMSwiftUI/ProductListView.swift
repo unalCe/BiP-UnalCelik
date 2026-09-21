@@ -48,7 +48,7 @@ struct ProductListRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            CachedImage(url: item.imageURL, maxPixelSize: 56, loader: imageLoader)
+            CachedImage(url: item.imageURL, maxPointSize: 56, loader: imageLoader)
                 .frame(width: 56, height: 56)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 4) {

@@ -2,9 +2,6 @@ import ImageCacheKit
 import ImageIO
 import UIKit
 
-/// `nonisolated async` rather than `Task.detached`: both run off the caller's
-/// actor, but only this one inherits cancellation. A detached decode would run
-/// a 5 megapixel thumbnail to completion for a cell that scrolled away.
 struct CGImageDownsampler: ImageDownsampling {
     func downsample(_ data: Data, maxPixelSize: Int, scale: CGFloat) async throws -> UIImage {
         try Task.checkCancellation()

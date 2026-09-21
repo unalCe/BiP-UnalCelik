@@ -21,8 +21,6 @@ final class NSCacheImageCache: DecodedImageCaching, @unchecked Sendable {
         storage.totalCostLimit = totalCostLimit
         storage.countLimit = countLimit
 
-        // `totalCostLimit` is advisory and NSCache's eviction policy is opaque.
-        // Under real pressure the decoded bitmaps should go deterministically.
         memoryWarningObserver = NotificationCenter.default.addObserver(
             forName: UIApplication.didReceiveMemoryWarningNotification,
             object: nil,

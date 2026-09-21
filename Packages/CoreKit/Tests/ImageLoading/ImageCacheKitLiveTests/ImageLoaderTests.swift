@@ -39,6 +39,20 @@ final class ImageLoaderTests: XCTestCase {
         XCTAssertEqual(cache.insertCount, 1)
     }
 
+    // two concurrent callers must share one download
+    func test_concurrentRequestsForTheSameImage_shareOneDownload() async throws {
+        let client = MockHTTPClient(always: .ok(Data("network-bytes".utf8)))
+        let downsampler = StubDownsampler(delay: .milliseconds(200))
+        let sut = ImageLoader(client: client, cache: StubImageCache(), downsampler: downsampler)
+
+        async let first = sut.image(for: request)
+        async let second = sut.image(for: request)
+        _ = try await (first, second)
+
+        XCTAssertEqual(client.sendCount, 1)
+        XCTAssertEqual(downsampler.callCount, 1)
+    }
+
     func test_transportFailure_propagates() async {
         let client = MockHTTPClient(always: .offline)
         let sut = ImageLoader(
@@ -55,44 +69,5 @@ final class ImageLoaderTests: XCTestCase {
         } catch {
             XCTFail("expected NetworkError, got \(error)")
         }
-    }
-}
-
-// MARK: - Doubles
-
-/// The cache and downsampler are internal to ImageCacheKitLive, so their
-/// doubles live here rather than in ImageCacheKitMocks.
-private final class StubImageCache: DecodedImageCaching, @unchecked Sendable {
-    private let lock = NSLock()
-    private var storage: [ImageRequest: UIImage]
-    private var inserts = 0
-
-    var insertCount: Int { lock.withLock { inserts } }
-
-    init(seed: [ImageRequest: UIImage] = [:]) { self.storage = seed }
-
-    func image(for request: ImageRequest) -> UIImage? {
-        lock.withLock { storage[request] }
-    }
-
-    func insert(_ image: UIImage, for request: ImageRequest) {
-        lock.withLock {
-            inserts += 1
-            storage[request] = image
-        }
-    }
-
-    func removeAll() { lock.withLock { storage.removeAll() } }
-}
-
-private final class StubDownsampler: ImageDownsampling, @unchecked Sendable {
-    private let lock = NSLock()
-    private var calls = 0
-
-    var callCount: Int { lock.withLock { calls } }
-
-    func downsample(_ data: Data, maxPixelSize: Int, scale: CGFloat) async throws -> UIImage {
-        lock.withLock { calls += 1 }
-        return UIImage()
     }
 }

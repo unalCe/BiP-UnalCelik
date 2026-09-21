@@ -14,6 +14,7 @@ public final class ProductListViewController: UIViewController {
     private typealias DataSource = UICollectionViewDiffableDataSource<Section, String>
 
     private let viewModel: ProductListViewModel
+    private let imagePrefetcher: any ImagePrefetchingInterface
     private var cancellables = Set<AnyCancellable>()
 
     private var itemsByID: [String: ProductDisplayModel] = [:]
@@ -25,6 +26,7 @@ public final class ProductListViewController: UIViewController {
         view.backgroundColor = .systemBackground
         view.alwaysBounceVertical = true
         view.delegate = self
+        view.prefetchDataSource = self
         return view
     }()
 
@@ -34,9 +36,8 @@ public final class ProductListViewController: UIViewController {
         return view
     }()
 
-    /// Built here, not lazily: UIKit traps if a registration is first created
-    /// inside the cell provider. Capturing `imageLoader` rather than `self`
-    /// is what lets it be a `let`.
+    // not lazy: UIKit traps if a registration is first created inside the cell
+    // provider. capturing `imageLoader` instead of `self` is what allows a `let`
     private let cellRegistration: UICollectionView.CellRegistration<ProductListCell, ProductDisplayModel>
 
     private lazy var dataSource = DataSource(
@@ -51,8 +52,10 @@ public final class ProductListViewController: UIViewController {
     }
 
     public init(viewModel: ProductListViewModel,
-                imageLoader: any ImageLoaderInterface) {
+                imageLoader: any ImageLoaderInterface,
+                imagePrefetcher: any ImagePrefetchingInterface) {
         self.viewModel = viewModel
+        self.imagePrefetcher = imagePrefetcher
         self.cellRegistration = UICollectionView.CellRegistration { cell, _, item in
             cell.configure(with: item,
                            imageLoader: imageLoader)
@@ -102,7 +105,7 @@ public final class ProductListViewController: UIViewController {
     }
 
     private func apply(_ items: [ProductDisplayModel]) {
-        // Duplicate identifiers are a hard crash inside `appendItems`.
+        // duplicate identifiers are a hard crash inside `appendItems`
         var unique: [ProductDisplayModel] = []
         var seen = Set<String>()
         for item in items where seen.insert(item.id).inserted { unique.append(item) }
@@ -132,5 +135,36 @@ extension ProductListViewController: UICollectionViewDelegate {
         collectionView.deselectItem(at: indexPath, animated: true)
         guard let id = dataSource.itemIdentifier(for: indexPath) else { return }
         viewModel.didSelectItem(id: id)
+    }
+}
+
+// MARK: - UICollectionViewDataSourcePrefetching
+
+extension ProductListViewController: UICollectionViewDataSourcePrefetching {
+    public func collectionView(_ collectionView: UICollectionView,
+                               prefetchItemsAt indexPaths: [IndexPath]) {
+        imagePrefetcher.prefetch(imageRequests(for: indexPaths))
+    }
+
+    public func collectionView(_ collectionView: UICollectionView,
+                               cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+        imagePrefetcher.cancelPrefetch(imageRequests(for: indexPaths))
+    }
+
+    private func imageRequests(for indexPaths: [IndexPath]) -> [ImageRequest] {
+        let pointSize = ProductListLayout.itemWidth(in: collectionView.bounds.width)
+
+        return indexPaths.compactMap { indexPath in
+            guard
+                let id = dataSource.itemIdentifier(for: indexPath),
+                let url = itemsByID[id]?.imageURL
+            else { return nil }
+
+            return ImageRequest(
+                url: url,
+                pointSize: pointSize,
+                scale: traitCollection.displayScale
+            )
+        }
     }
 }

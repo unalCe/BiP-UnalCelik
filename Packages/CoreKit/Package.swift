@@ -109,7 +109,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ImageCacheKitLiveTests",
-            dependencies: ["ImageCacheKitLive", "NetworkingKitMocks"],
+            dependencies: ["ImageCacheKitLive", "ImageCacheKitMocks", "NetworkingKitMocks"],
             path: "Tests/ImageLoading/ImageCacheKitLiveTests"
         ),
     ],

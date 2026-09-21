@@ -7,15 +7,9 @@ public enum HTTPMethod: String, Sendable {
     case delete = "DELETE"
 }
 
-/// Kept free of `URLRequest.CachePolicy` so the interface stays transport-agnostic.
 public enum HTTPCachePolicy: Sendable, Equatable {
-    /// Whatever the response headers say. Right for immutable bytes such as images.
-    case standard
-    /// Always ask, and accept a 304. Right for anything that can change, and
-    /// necessary here: these endpoints send no `Cache-Control`, so heuristic
-    /// freshness against a 2015 `Last-Modified` would pin the response for
-    /// roughly a year.
-    case revalidate
+    case standard    // whatever the response headers say
+    case revalidate  // always ask; accept a 304
 }
 
 public struct HTTPRequest: Sendable, Equatable {
