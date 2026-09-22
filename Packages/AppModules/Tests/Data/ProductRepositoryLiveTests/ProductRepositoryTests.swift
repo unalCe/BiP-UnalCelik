@@ -1,6 +1,5 @@
 import NetworkingKit
 import NetworkingKitMocks
-import PersistenceKitMocks
 import ProductDomain
 import XCTest
 @testable import ProductRepositoryLive
@@ -11,7 +10,7 @@ final class ProductRepositoryTests: XCTestCase {
     func test_products_decodesLivePayloadShape() async throws {
         let sut = ProductRepository(
             client: MockHTTPClient(always: .ok(HTTPFixtures.productList)),
-            store: MockPersistentStore(),
+            container: try makeTestContainer(),
             baseURL: baseURL
         )
 
@@ -23,7 +22,7 @@ final class ProductRepositoryTests: XCTestCase {
 
     func test_detail_requestsEncodedPathForNonNumericID() async throws {
         let client = MockHTTPClient(always: .ok(HTTPFixtures.productDetail))
-        let sut = ProductRepository(client: client, store: MockPersistentStore(), baseURL: baseURL)
+        let sut = ProductRepository(client: client, container: try makeTestContainer(), baseURL: baseURL)
 
         _ = try await sut.product(id: "6_id_is_a_string")
 
@@ -34,25 +33,25 @@ final class ProductRepositoryTests: XCTestCase {
     }
 
     func test_networkFailure_fallsBackToCache() async throws {
-        let store = MockPersistentStore()
+        let container = try makeTestContainer()
         let warm = ProductRepository(
             client: MockHTTPClient(always: .ok(HTTPFixtures.productList)),
-            store: store, baseURL: baseURL
+            container: container, baseURL: baseURL
         )
         _ = try await warm.products()   // populate the cache
 
         let offline = ProductRepository(
-            client: MockHTTPClient(always: .offline), store: store, baseURL: baseURL
+            client: MockHTTPClient(always: .offline), container: container, baseURL: baseURL
         )
         let products = try await offline.products()
 
         XCTAssertEqual(products.map(\.id), ["1", "6_id_is_a_string", "12"])
     }
 
-    func test_networkFailure_withEmptyCache_throwsMappedError() async {
+    func test_networkFailure_withEmptyCache_throwsMappedError() async throws {
         let sut = ProductRepository(
             client: MockHTTPClient(always: .status(403, body: HTTPFixtures.accessDenied)),
-            store: MockPersistentStore(),
+            container: try makeTestContainer(),
             baseURL: baseURL
         )
 
@@ -66,10 +65,10 @@ final class ProductRepositoryTests: XCTestCase {
         }
     }
 
-    func test_malformedPayload_mapsToInvalidData() async {
+    func test_malformedPayload_mapsToInvalidData() async throws {
         let sut = ProductRepository(
             client: MockHTTPClient(always: .ok(HTTPFixtures.malformed)),
-            store: MockPersistentStore(),
+            container: try makeTestContainer(),
             baseURL: baseURL
         )
 
@@ -86,7 +85,7 @@ final class ProductRepositoryTests: XCTestCase {
     func test_emptyList_returnsEmptyRatherThanFailing() async throws {
         let sut = ProductRepository(
             client: MockHTTPClient(always: .ok(HTTPFixtures.emptyProductList)),
-            store: MockPersistentStore(),
+            container: try makeTestContainer(),
             baseURL: baseURL
         )
 

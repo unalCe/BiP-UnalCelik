@@ -6,7 +6,7 @@ public struct Money: Hashable, Sendable, Codable {
     public let minorUnits: Int
     public let currencyCode: String
 
-    public init(minorUnits: Int, currencyCode: String = "TRY") {
+    public init(minorUnits: Int, currencyCode: String = "USD") {
         self.minorUnits = minorUnits
         self.currencyCode = currencyCode
     }

@@ -12,13 +12,13 @@ public enum ProductRepositoryDependencyRegistration: DependencyRegistration {
     public static func register(to engine: DependencyEngine) {
         guard
             let client: any HTTPClientInterface = engine.resolve((any HTTPClientInterface).self),
-            let store: any PersistentStoreInterface = engine.resolve((any PersistentStoreInterface).self)
+            let container: any PersistentContainerInterface = engine.resolve((any PersistentContainerInterface).self)
         else {
-            fatalError("Register NetworkingKit and PersistenceKit before ProductRepository")
+            fatalError("Register NetworkingKit and the persistent container before ProductRepository")
         }
 
         engine.register(
-            value: ProductRepository(client: client, store: store, baseURL: baseURL)
+            value: ProductRepository(client: client, container: container, baseURL: baseURL)
                 as any ProductRepositoryInterface,
             for: (any ProductRepositoryInterface).self
         )
