@@ -50,7 +50,7 @@ public enum FlowRegistration {
             )
 
         case .viperUIKit:
-            detail = VIPERProductDetailModule(fetchDetail: fetchDetail)
+            detail = VIPERProductDetailModule(fetchDetail: fetchDetail, imageLoader: imageLoader)
             list = VIPERProductListModule(fetchProducts: fetchProducts)
         }
 

@@ -128,7 +128,10 @@ let package = Package(
         .target(
             name: "ProductDetailMVVMUIKit",
             dependencies: [
-                .product(name: "LayoutKit", package: "CoreKit"),"ProductDetailMVVM", "ProductDetailInterface", "CommonUI"],
+                .product(name: "LayoutKit", package: "CoreKit"),
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+                "ProductDetailMVVM", "ProductDetailInterface", "CommonUI",
+            ],
             path: "Sources/Features/ProductDetail/ProductDetailMVVM/ProductDetailMVVMUIKit"
         ),
         .target(
@@ -140,6 +143,7 @@ let package = Package(
             name: "ProductDetailVIPER",
             dependencies: [
                 .product(name: "LayoutKit", package: "CoreKit"),
+                .product(name: "ImageCacheKit", package: "CoreKit"),
                 "ProductDomain", "CommonKit", "CommonUI",
                 "ProductDetailInterface",
                 .product(name: "DependencyEngine", package: "CoreKit"),
@@ -202,6 +206,14 @@ let package = Package(
             name: "ProductListVIPERTests",
             dependencies: ["ProductListVIPER", "ProductRepositoryMocks"],
             path: "Tests/Features/ProductList/ProductListVIPERTests"
+        ),
+        .testTarget(
+            name: "ProductDetailMVVMUIKitTests",
+            dependencies: [
+                "ProductDetailMVVMUIKit", "ProductDetailMVVM", "ProductRepositoryMocks", "CommonKit",
+                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+            ],
+            path: "Tests/Features/ProductDetail/ProductDetailMVVMUIKitTests"
         ),
         .testTarget(
             name: "ProductDetailMVVMTests",
