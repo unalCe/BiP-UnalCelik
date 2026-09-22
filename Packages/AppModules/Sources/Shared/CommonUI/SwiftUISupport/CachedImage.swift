@@ -33,7 +33,7 @@ public struct CachedImage: View {
         if let uiImage {
             Image(uiImage: uiImage).resizable().scaledToFill()
         } else {
-            SkeletonBox(cornerRadius: 0)
+            SkeletonBox(cornerRadius: 0).shimmering()
         }
     }
 

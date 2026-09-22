@@ -1,6 +1,5 @@
 import SwiftUI
 
-
 struct ShimmerModifier: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var phase: CGFloat = 0

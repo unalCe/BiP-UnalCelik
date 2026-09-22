@@ -9,39 +9,20 @@ import UIKit
 /// and one animation, and Core Animation paces it — nothing here runs per frame.
 @MainActor
 final class ProductListSkeletonView: UIView {
-    private enum Key {
-        static let sweep = "skeleton.sweep"
-    }
-
     private let shapes: CAShapeLayer = {
         let layer = CAShapeLayer()
         layer.fillColor = Skeleton.fill.cgColor
         return layer
     }()
 
-    private let shimmerContainer = CALayer()
-    private let shimmerMask = CAShapeLayer()
-
-    private let gradient: CAGradientLayer = {
-        let layer = CAGradientLayer()
-        layer.startPoint = CGPoint(x: 0, y: 0.5)
-        layer.endPoint = CGPoint(x: 1, y: 0.5)
-        layer.colors = [
-            UIColor.white.withAlphaComponent(0).cgColor,
-            UIColor.white.withAlphaComponent(0.38).cgColor,
-            UIColor.white.withAlphaComponent(0).cgColor,
-        ]
-        return layer
-    }()
+    private let shimmer = ShimmerSweep()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         isUserInteractionEnabled = false
         backgroundColor = .systemBackground
         layer.addSublayer(shapes)
-        shimmerContainer.mask = shimmerMask
-        shimmerContainer.addSublayer(gradient)
-        layer.addSublayer(shimmerContainer)
+        shimmer.attach(to: layer)
     }
 
     @available(*, unavailable)
@@ -53,13 +34,8 @@ final class ProductListSkeletonView: UIView {
         let path = placeholderPath(from: placeholders)
         shapes.frame = bounds
         shapes.path = path
-        shimmerContainer.frame = bounds
-        shimmerMask.frame = bounds
-        shimmerMask.path = path
-
-        let band = bounds.width * 0.35
-        gradient.frame = CGRect(x: -band, y: 0, width: band, height: bounds.height)
-        restartSweepIfNeeded()
+        shimmer.layout(in: bounds, clippedTo: path)
+        if !isHidden { shimmer.start() }
     }
 
     override func safeAreaInsetsDidChange() {
@@ -77,10 +53,10 @@ final class ProductListSkeletonView: UIView {
 
     func start() {
         isHidden = false
-        restartSweepIfNeeded()
+        setNeedsLayout()
     }
 
-    var isSweeping: Bool { gradient.animation(forKey: Key.sweep) != nil }
+    var isSweeping: Bool { shimmer.isRunning }
 
     /// The collection view adjusts its content for the bars, so the placeholders
     /// have to start in the same place or they jump when the cells land.
@@ -90,21 +66,7 @@ final class ProductListSkeletonView: UIView {
 
     func stop() {
         isHidden = true
-        gradient.removeAnimation(forKey: Key.sweep)
-    }
-
-    private func restartSweepIfNeeded() {
-        gradient.removeAnimation(forKey: Key.sweep)
-        guard !isHidden, bounds.width > 0, !UIAccessibility.isReduceMotionEnabled else { return }
-
-        let band = gradient.bounds.width
-        let sweep = CABasicAnimation(keyPath: "position.x")
-        sweep.fromValue = -band / 2
-        sweep.toValue = bounds.width + band / 2
-        sweep.duration = Skeleton.sweepDuration
-        sweep.repeatCount = .infinity
-        sweep.timingFunction = CAMediaTimingFunction(name: .linear)
-        gradient.add(sweep, forKey: Key.sweep)
+        shimmer.stop()
     }
 
     private func placeholderPath(from placeholders: [Placeholder]) -> CGPath {
