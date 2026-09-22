@@ -122,9 +122,9 @@ refetches nothing — the visible proof that the core is untouched.
 
 ### Images
 
-The API serves 2418x2192 JPEGs, ~576 KB each, into a 177pt cell. Decoding those
-at full size costs ~21 MB of bitmap apiece, so the pipeline is size-aware end to
-end:
+The API's JPEGs vary from 257x285 to 2418x2192 and land in a 177pt cell.
+Decoding the largest at full size costs ~21 MB of bitmap, so the pipeline is
+size-aware end to end:
 
 ```
 ImageRequest(url:maxPixelSize:)   pixel size is part of the cache key,
@@ -138,9 +138,17 @@ ImageLoader                       cache-first
 ImagePrefetcher                   speculative, driven by the collection view
 ```
 
-A UIKit cell measures itself and asks for what it can show; SwiftUI passes its
-known frame. Measured on the list screen: resident memory fell from 67.0 MB to
-30.9 MB, and a full scroll issues exactly 12 requests for 12 products.
+Both renderers measure themselves and ask for what they can show — `CachedImageView`
+and `CachedImage` are the same idea twice. A 177pt cell at 3x wants 531px, which
+rounds up to the 640 bucket:
+
+```
+image 1   2418x2192 source  ->  640x580   1450 KB   (21 MB if decoded whole)
+image 3    550x441  source  ->  550x441    950 KB   (already under the bucket)
+```
+
+Measured on the list screen: resident memory fell from 67.0 MB to 30.9 MB, and a
+full scroll issues exactly 12 requests for 12 products.
 
 Encoded bytes are `URLSession`'s problem, held in a configured `URLCache`;
 decoded bitmaps are `NSCache`'s. Anything that can change asks for

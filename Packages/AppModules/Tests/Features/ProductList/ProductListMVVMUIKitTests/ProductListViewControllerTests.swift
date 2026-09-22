@@ -3,7 +3,7 @@ import ImageCacheKit
 import ImageCacheKitMocks
 import ProductDomain
 import ProductListMVVM
-import ProductListMVVMUIKit
+@testable import ProductListMVVMUIKit
 import ProductRepositoryMocks
 import UIKit
 import XCTest
@@ -71,6 +71,69 @@ final class ProductListViewControllerTests: XCTestCase {
         }
 
         XCTAssertEqual(prefetched.maxPixelSize, fromCell.maxPixelSize)
+    }
+
+    // a long title used to crush the price label to zero height: every cell was
+    // forced to one section-wide height, so nothing could grow for its content
+    func test_aLongTitleDoesNotCrushThePrice() async {
+        let products = [
+            Product(id: "1", name: "Apples", price: Money(minorUnits: 120), imageURL: nil),
+            Product(id: "2", name: "Bananas and a very long name that wraps onto two lines",
+                    price: Money(minorUnits: 88), imageURL: nil),
+        ]
+        let (sut, _) = makeSUT(repository: StubProductRepository(products: .success(products)))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+        window.rootViewController = sut
+        window.makeKeyAndVisible()
+        sut.loadViewIfNeeded()
+        await sut.settle()
+        window.layoutIfNeeded()
+
+        guard let grid = collectionView(in: sut) else { return XCTFail("no collection view") }
+        let cells = grid.visibleCells.sorted { $0.frame.minX < $1.frame.minX }
+        XCTAssertEqual(cells.count, 2)
+
+        for cell in cells {
+            let labels = cell.contentView.subviews.compactMap { $0 as? UILabel }
+            for label in labels {
+                XCTAssertGreaterThan(
+                    label.bounds.height, 0,
+                    "\(label.text ?? "nil") has no height in a \(cell.bounds.height)pt cell"
+                )
+                XCTAssertLessThanOrEqual(
+                    label.frame.maxY, cell.contentView.bounds.height + 0.5,
+                    "\(label.text ?? "nil") overflows its cell"
+                )
+            }
+        }
+    }
+
+    // spacing used to come from item contentInsets, which stop separating rows
+    // once the item self-sizes — the rows ended up touching
+    func test_cellsAreSeparatedAndInsetByTheGutter() async {
+        let products = (1...4).map {
+            Product(id: "\($0)", name: "Item \($0)", price: Money(minorUnits: 100), imageURL: nil)
+        }
+        let (sut, _) = makeSUT(repository: StubProductRepository(products: .success(products)))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+        window.rootViewController = sut
+        window.makeKeyAndVisible()
+        sut.loadViewIfNeeded()
+        await sut.settle()
+        window.layoutIfNeeded()
+
+        guard let grid = collectionView(in: sut) else { return XCTFail("no collection view") }
+        let frames = grid.visibleCells.map(\.frame).sorted { ($0.minY, $0.minX) < ($1.minY, $1.minX) }
+        guard frames.count == 4 else { return XCTFail("expected 4 cells, got \(frames.count)") }
+
+        let gutter = ProductListLayout.gutter
+        XCTAssertEqual(frames[0].minX, gutter, accuracy: 0.5, "leading margin")
+        XCTAssertEqual(grid.bounds.width - frames[1].maxX, gutter, accuracy: 0.5, "trailing margin")
+        XCTAssertEqual(frames[1].minX - frames[0].maxX, gutter, accuracy: 0.5, "column gap")
+        XCTAssertEqual(frames[2].minY - frames[0].maxY, gutter, accuracy: 0.5, "row gap")
+        XCTAssertEqual(
+            frames[0].width, ProductListLayout.itemWidth(in: grid.bounds.width), accuracy: 0.5
+        )
     }
 
     // MARK: - Helpers
