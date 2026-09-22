@@ -20,7 +20,6 @@ let package = Package(
 
         .library(name: "PersistenceKit", targets: ["PersistenceKit"]),
         .library(name: "PersistenceKitLive", targets: ["PersistenceKitLive"]),
-        .library(name: "PersistenceKitMocks", targets: ["PersistenceKitMocks"]),
 
         .library(name: "ImageCacheKit", targets: ["ImageCacheKit"]),
         .library(name: "ImageCacheKitLive", targets: ["ImageCacheKitLive"]),
@@ -65,13 +64,8 @@ let package = Package(
         ),
         .target(
             name: "PersistenceKitLive",
-            dependencies: ["PersistenceKit", "DependencyEngine"],
-            path: "Sources/Persistence/PersistenceKitLive"
-        ),
-        .target(
-            name: "PersistenceKitMocks",
             dependencies: ["PersistenceKit"],
-            path: "Sources/Persistence/PersistenceKitMocks"
+            path: "Sources/Persistence/PersistenceKitLive"
         ),
 
         // ── Image loading ─────────────────────────────────────────────────
@@ -124,7 +118,7 @@ let package = Package(
         ),
         .testTarget(
             name: "PersistenceKitLiveTests",
-            dependencies: ["PersistenceKitLive", "PersistenceKitMocks"],
+            dependencies: ["PersistenceKitLive"],
             path: "Tests/Persistence/PersistenceKitLiveTests"
         ),
         .testTarget(

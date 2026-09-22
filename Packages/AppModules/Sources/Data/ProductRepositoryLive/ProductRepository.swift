@@ -5,21 +5,21 @@ import ProductDomain
 
 public final class ProductRepository: ProductRepositoryInterface {
     private let remote: any ProductRemoteDataSource
-    private let cache: ProductCache
+    private let local: any ProductLocalDataSource
 
-    init(remote: any ProductRemoteDataSource, cache: ProductCache) {
+    init(remote: any ProductRemoteDataSource, local: any ProductLocalDataSource) {
         self.remote = remote
-        self.cache = cache
+        self.local = local
     }
 
     public convenience init(
         client: any HTTPClientInterface,
-        store: any PersistentStoreInterface,
+        container: any PersistentContainerInterface,
         baseURL: URL
     ) {
         self.init(
             remote: HTTPProductRemoteDataSource(client: client, baseURL: baseURL),
-            cache: ProductCache(store: store)
+            local: CoreDataProductStore(container: container)
         )
     }
 
@@ -29,10 +29,10 @@ public final class ProductRepository: ProductRepositoryInterface {
     public func products() async throws -> [Product] {
         do {
             let fresh = try await remote.products()
-            await cache.save(fresh)
+            await local.saveListPage(fresh)
             return fresh
         } catch {
-            let cached = await cache.products()
+            let cached = await local.products()
             guard cached.isEmpty else { return cached }
             throw DomainErrorMapper.map(error)
         }
@@ -41,10 +41,10 @@ public final class ProductRepository: ProductRepositoryInterface {
     public func product(id: String) async throws -> Product {
         do {
             let fresh = try await remote.product(id: id)
-            await cache.save(fresh)
+            await local.saveDetail(fresh)
             return fresh
         } catch {
-            if let cached = await cache.product(id: id) { return cached }
+            if let cached = await local.product(id: id) { return cached }
             throw DomainErrorMapper.map(error)
         }
     }

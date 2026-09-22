@@ -50,7 +50,8 @@ let package = Package(
                 .product(name: "PersistenceKit", package: "CoreKit"),
                 .product(name: "DependencyEngine", package: "CoreKit"),
             ],
-            path: "Sources/Data/ProductRepositoryLive"
+            path: "Sources/Data/ProductRepositoryLive",
+            resources: [.process("Local/ProductDataModel.xcdatamodeld")]
         ),
         .target(
             name: "ProductRepositoryMocks",
@@ -134,7 +135,10 @@ let package = Package(
         .target(
             name: "ProductDetailMVVMUIKit",
             dependencies: [
-                .product(name: "LayoutKit", package: "CoreKit"),"ProductDetailMVVM", "ProductDetailInterface", "CommonUI"],
+                .product(name: "LayoutKit", package: "CoreKit"),
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+                "ProductDetailMVVM", "ProductDetailInterface", "CommonUI",
+            ],
             path: "Sources/Features/ProductDetail/ProductDetailMVVM/ProductDetailMVVMUIKit"
         ),
         .target(
@@ -146,6 +150,7 @@ let package = Package(
             name: "ProductDetailVIPER",
             dependencies: [
                 .product(name: "LayoutKit", package: "CoreKit"),
+                .product(name: "ImageCacheKit", package: "CoreKit"),
                 "ProductDomain", "CommonKit", "CommonUI",
                 "ProductDetailInterface",
                 .product(name: "DependencyEngine", package: "CoreKit"),
@@ -184,7 +189,7 @@ let package = Package(
             dependencies: [
                 "ProductRepositoryLive",
                 .product(name: "NetworkingKitMocks", package: "CoreKit"),
-                .product(name: "PersistenceKitMocks", package: "CoreKit"),
+                .product(name: "PersistenceKitLive", package: "CoreKit"),
             ],
             path: "Tests/Data/ProductRepositoryLiveTests"
         ),
@@ -214,6 +219,14 @@ let package = Package(
             name: "ProductListVIPERTests",
             dependencies: ["ProductListVIPER", "ProductRepositoryMocks"],
             path: "Tests/Features/ProductList/ProductListVIPERTests"
+        ),
+        .testTarget(
+            name: "ProductDetailMVVMUIKitTests",
+            dependencies: [
+                "ProductDetailMVVMUIKit", "ProductDetailMVVM", "ProductRepositoryMocks", "CommonKit",
+                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+            ],
+            path: "Tests/Features/ProductDetail/ProductDetailMVVMUIKitTests"
         ),
         .testTarget(
             name: "ProductDetailMVVMTests",

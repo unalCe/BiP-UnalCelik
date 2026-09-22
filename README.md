@@ -52,7 +52,7 @@ is already booted; harmless.)
 TurkcellCase.xcworkspace                 ← open this
 App/TurkcellCase-UnalCelik.xcodeproj     app bundle only: @main, assets, plist
 Packages/AppModules/                     16 targets — this app's code
-Packages/CoreKit/                        11 targets — reusable infrastructure
+Packages/CoreKit/                        10 targets — reusable infrastructure
 ```
 
 The app target is a thin shell that links one product, `AppFeature`:
@@ -83,9 +83,12 @@ Read `Package.swift`; the `dependencies:` lists *are* the architecture.
 | `ProductListMVVM` lists **no UI module** | "one ViewModel, two renderers" is a manifest fact, not a comment |
 | `LayoutKit` depends on nothing | any UIKit app could lift it out |
 
-Each kit ships three targets — `XKit` (protocols), `XKitLive` (the real thing),
-`XKitMocks` (stubs + captured fixtures). `LayoutKit` is the exception: a UIKit
-constraint DSL with nothing to swap, so no interface/implementation split.
+Each kit ships `XKit` (protocols) and `XKitLive` (the real thing), plus
+`XKitMocks` (stubs + captured fixtures) where tests need a double. Two
+exceptions: `LayoutKit` is a UIKit constraint DSL with nothing to swap, so no
+interface/implementation split; and `PersistenceKit` has no `Mocks` because its
+tests run the real stack against an in-memory store, which is strictly stronger
+than a double that can drift.
 
 ```swift
 container.addSubview(content, pinnedToEdges: .all(16))
@@ -143,6 +146,37 @@ Encoded bytes are `URLSession`'s problem, held in a configured `URLCache`;
 decoded bitmaps are `NSCache`'s. Anything that can change asks for
 `HTTPCachePolicy.revalidate`, since these endpoints send no `Cache-Control`.
 
+### What the device keeps
+
+`ProductRepositoryLive` owns a Core Data model of one entity, `CDProduct`, and
+bounds it deliberately rather than letting it grow:
+
+| Kept | Rule |
+|---|---|
+| The list | one whole page, replacing the previous one — 12 products here |
+| Details | the last **3** visited, by `detailVisitedAt` |
+
+The interesting case is the overlap. A row is alive while it holds a
+`listPosition` *or* a `detailVisitedAt`, so evicting a detail drops the
+**description**, not the product:
+
+```
+visit 1 → 2 → 3 → 4, then go offline
+
+  4, 3, 2   name, price, image, description
+  1         name, price, image              ← its detail was evicted
+  5…12      name, price, image              ← never visited, still in the page
+```
+
+A row without its description renders "Description unavailable." rather than
+dropping the section, so a product whose detail was evicted cannot be mistaken
+for one the API has no description for.
+
+Reads stay remote-first; the store is what answers when the network doesn't.
+`CoreDataStack` in CoreKit knows nothing about products — it loads the caller's
+model from the caller's bundle, which is what keeps the entities down in the
+data layer.
+
 ### No VIPER + SwiftUI
 
 Selecting VIPER locks the framework toggle and says why. VIPER binds Presenter
@@ -185,7 +219,7 @@ cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
 ```
 
 ```bash
-# 53 tests across 8 bundles, on a simulator.
+# 67 tests across 9 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -211,7 +245,11 @@ Performance tracing launch arguments (`-perfHUD YES`, `-perfTracing NO`,
 
 ## Status
 
-Skeleton. Every boundary, both packages, all three flows wired and compiling;
-**103 tests green** (53 AppModules + 50 CoreKit). Views are state-machine `switch`es with `TODO` markers for
-layout. Core Data and the image cache have working in-memory stand-ins behind
-their final interfaces. See ARCHITECTURE.md §10 for the day plan.
+List and detail both render on all three stacks; **117 tests green** (67
+AppModules + 50 CoreKit). Core Data and the image pipeline are real — no
+stand-ins left.
+
+One thing outstanding: `ProductListVIPER`'s controller is still a state view
+with a `TODO` where its collection view goes, so the VIPER *detail* screen is
+built and tested but cannot be reached by tapping. See ARCHITECTURE.md §9a for
+that and the other deferred items, §10 for the day plan.

@@ -87,6 +87,12 @@ the reasoning stays in one place.
 | Both packages are iOS-only | `LayoutKit` needs UIKit; declaring macOS would have meant `#if canImport(UIKit)` guards across its files for no benefit beyond a faster `swift test` |
 | The diffable item identifier is `Product.id`, not `ProductDisplayModel` | identity stays stable when content changes, so a price edit is a `reconfigureItems` on the live cell rather than a delete + insert that tears the cell down and reloads its image |
 | `LayoutKit` lives in CoreKit, not AppModules | it knows nothing about products — any UIKit app could take it |
+| What the device keeps is **a page and three details**, not a count of rows | a cache holding some fraction of a page cannot render the list coherently offline — you would show 7 of 12 products with no way to explain the gap. So the unit is the page, replacing the previous one. Under real pagination the same rule keeps page 1 only: offline you show the first page and stop, and storage is bounded however far the user scrolled. Details are capped at 3 by last-visited, since a detail row differs from a list row only by `description` |
+| `detailVisitedAt` is a recency rank, never a TTL | nothing compares it to the clock. It sorts descending and everything past the third is evicted, so retention is count-driven: a detail visited a year ago survives until three newer ones displace it. A monotonic counter would be equivalent and immune to the device clock moving backwards; `Date` was kept because it is legible in the store and the worst case is that the wrong one of three is evicted and refetched |
+| One `CDProduct` entity carries both roles | eviction must drop the *detail*, not the product. Visiting 1→2→3→4 clears product 1's `detailVisitedAt` and `productDescription` while its `listPosition` keeps the row alive, so the list still renders it offline — just without a description. A row that holds neither is deleted. Two entities would have made that a join for no gain at this size |
+| `PersistenceKit` is a Core Data **stack**, not a key-value store | it used to be a Codable-blob `PersistentStoreInterface`, which was Core Data used as a dictionary and pushed the retention policy into blob bookkeeping. The stack is what stays product-agnostic: `CoreDataStack(modelName:bundle:)` loads the *caller's* model, so the entities live in `ProductRepositoryLive` where the §4 boundary rule already puts them |
+| `read` and `write` are separate, rather than one `perform` | who saves is then in the type instead of in every caller's memory. `write` saves and rolls back on throw — the context outlives the call, so a half-finished write would otherwise be committed by the next one. A test caught exactly that |
+| The detail layout is written per controller, not shared | MVVM and VIPER build the same hierarchy in their own files. The duplication is deliberate: a shared `ProductDetailContentView` would put a product-shaped view in `CommonUI`, and each stack is meant to be readable end to end on its own |
 
 ### Source grouping
 
@@ -97,7 +103,7 @@ Packages/AppModules/Sources/        Packages/CoreKit/Sources/
   Application/AppFeature/             DependencyInjection/DependencyEngine/
   Domain/ProductDomain/               Layout/LayoutKit/
   Data/ProductRepositoryLive/         Networking/NetworkingKit{,Live,Mocks}/
-  Shared/CommonKit/ CommonUI/         Persistence/PersistenceKit{,Live,Mocks}/
+  Shared/CommonKit/ CommonUI/         Persistence/PersistenceKit{,Live}/
   Features/ProductList/…              ImageLoading/ImageCacheKit{,Live,Mocks}/
   Features/ProductDetail/…
 ```
@@ -181,7 +187,7 @@ XCUITest hosts**.
   NetworkingKit      PersistenceKit      ImageCacheKit        ← interfaces
         │                   │                   │                (deps: none)
         │  NetworkingKitLive│ PersistenceKitLive│ ImageCacheKitLive
-        │  NetworkingKitMocks PersistenceKitMocks ImageCacheKitMocks
+        │  NetworkingKitMocks                    ImageCacheKitMocks
         │                   │                   │
         └─────────┬─────────┘                   │
                   ▼                             │
@@ -245,7 +251,7 @@ both. There is exactly one `ProductDomain`.
 | Entities | `ProductDomain` | `Product`, `Money` |
 | Use cases | `ProductDomain` | `FetchProductsUseCase`, `FetchProductDetailUseCase` |
 | Boundaries | `ProductDomain` | `ProductRepositoryInterface`, `DomainError` |
-| Data | `ProductRepositoryLive` | DTOs, mappers, remote + local sources, cache policy |
+| Data | `ProductRepositoryLive` | DTOs, mappers, remote + local sources, the Core Data model, retention |
 | Presentation | feature targets | ViewModels / Presenters, views, navigation |
 
 Dependency inversion: `ProductRepositoryInterface` is declared in `ProductDomain`
@@ -255,6 +261,8 @@ or Core Data.
 Boundary discipline:
 
 - `ProductDTO` and `NSManagedObject` never leave `ProductRepositoryLive`.
+  `CoreDataStack` hands out an `NSManagedObjectContext` inside a closure and
+  takes back only `Sendable` results, so the entity never escapes either.
 - `NetworkError` → `DomainError` → user-facing copy. Three vocabularies; none
   leaks past its layer.
 - Views render `ProductDisplayModel` (already formatted), never `Product`.
@@ -460,6 +468,8 @@ Deferred deliberately, recorded here so they do not live as scattered `TODO`s.
 | No concurrency ceiling on decodes | **measured twice as not worth building.** A limiter at 2 moved peak footprint by nothing (41.1/46.8 MB unbounded vs 41.4/44.0/38.4 MB limited): `URLSession` caps connections per host at ~6 and `CGImageSourceCreateThumbnailAtIndex` decodes subsampled, so decodes never stack. `CG raster data` sits at 256 KB resident. Revisited when prefetching landed — UIKit queued 4 prefetches, not dozens, and the answer did not change |
 | Prefetch cancellation is not reference-counted | `cancelPrefetch` and `CachedImageView.cancel()` drop the requester, not the shared download — cancellation does not propagate from an awaiter to an unstructured `Task`, and aborting could break a visible cell that joined the same request. Counting interested parties would allow a true abort. Worth it at pagination scale, not at twelve items |
 | No disk tier for decoded images | deliberate. Encoded bytes are `URLCache`'s job; decoded bitmaps stay in memory under `NSCache` |
+| The VIPER detail screen cannot be reached by tapping | `ProductListVIPER`'s controller is still a `StateContainerView` with a `TODO` where its collection view goes, so `ProductListRouter.routeToDetail` never fires. The detail module itself is finished and `FlowRegistrationTests` constructs it, so it stays compiled and covered — it is the VIPER *list* that is outstanding |
+| No Core Data migration policy | one model version, no `NSMigrationPolicy`. Acceptable because the store is a cache: every row can be refetched, so a model change can drop and rebuild rather than migrate. A store holding user-authored data could not make that trade |
 
 ---
 
@@ -532,10 +542,10 @@ Conditioner, and diff the two reports.
 | Day | Work |
 |---|---|
 | 1 | Package skeletons, `ProductDomain`, `NetworkingKit` + Live + Mocks, `DependencyEngine` |
-| 2 | `PersistenceKit` Core Data stack, `ImageCacheKit`, `ProductRepositoryLive` + cache policy |
-| 3 | MVVM-C · UIKit end to end — compositional layout, diffable, prefetch, detail screen. **List done; detail screen and the image pipeline in §9a outstanding.** |
+| 2 | `PersistenceKit` Core Data stack, `ImageCacheKit`, `ProductRepositoryLive` + retention policy |
+| 3 | MVVM-C · UIKit end to end — compositional layout, diffable, prefetch, detail screen. **Done.** |
 | 4 am | SwiftUI renderer (reuses the ViewModels) |
-| 4 pm–5 am | VIPER · UIKit both modules |
+| 4 pm–5 am | VIPER · UIKit both modules. **Detail done; the list controller is still a stub — see §9a.** |
 | 5 pm | Flow picker, demo app, README, test pass |
 
 Cut line: if day 4 overruns, **drop VIPER, keep SwiftUI.** SwiftUI is ~3 hours

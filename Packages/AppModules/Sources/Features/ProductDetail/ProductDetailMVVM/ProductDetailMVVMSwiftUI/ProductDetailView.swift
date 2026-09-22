@@ -28,24 +28,39 @@ public struct ProductDetailView: View {
         case .loaded(let item):
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    CachedImage(url: item.imageURL,
-                                maxPointSize: 280,
-                                loader: imageLoader)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 280)
+                    Color.clear
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            GeometryReader { proxy in
+                                CachedImage(url: item.imageURL,
+                                            maxPointSize: proxy.size.width,
+                                            loader: imageLoader)
+                            }
+                        }
                         .clipped()
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(item.title).font(.title2.weight(.semibold))
-                        Text(item.formattedPrice).font(.headline).foregroundStyle(.secondary)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            Text(item.title).font(.title2.weight(.semibold))
+                            Spacer(minLength: 0)
+                            Text(item.formattedPrice)
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                                .layoutPriority(1)
+                        }
                         if let description = item.description {
                             Text(description).font(.body)
+                        } else {
+                            Text("Description unavailable.")
+                                .font(.body.italic())
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal)
+                    .padding(.bottom, 24)
                 }
             }
-            .navigationTitle(item.title)
         case .empty:
             ContentUnavailableView("Not available", systemImage: "tray")
         case .failed(let error):
