@@ -3,6 +3,7 @@ import ProductDetailInterface
 import ProductDomain
 import ProductRepositoryMocks
 import UIKit
+import Foundation
 import XCTest
 @testable import ProductListVIPER
 
@@ -94,9 +95,9 @@ private final class SpyView: ProductListViewInterface {
     }
 
     func settle() async {
-        for _ in 0..<50 {
-            if receivedStates.count >= 2 { return }
-            await Task.yield()
+        let deadline = Date().addingTimeInterval(2)
+        while receivedStates.count < 2, Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(5))
         }
     }
 }

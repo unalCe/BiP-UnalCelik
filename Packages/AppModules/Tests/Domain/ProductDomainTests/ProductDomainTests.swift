@@ -58,4 +58,8 @@ private struct StubRepository: ProductRepositoryInterface {
         }
         return match
     }
+
+    func cachedDetail(id: String) async -> Product? {
+        products.first { $0.id == id }
+    }
 }

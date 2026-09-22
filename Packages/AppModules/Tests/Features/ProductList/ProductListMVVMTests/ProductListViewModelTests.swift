@@ -1,6 +1,7 @@
 import CommonKit
 import ProductDomain
 import ProductRepositoryMocks
+import Foundation
 import XCTest
 @testable import ProductListMVVM
 
@@ -91,9 +92,9 @@ extension ProductListViewModel {
     /// The ViewModel starts a detached `Task`; yield until it lands.
     /// TODO: replace with an injected scheduler once one exists.
     func settle() async {
-        for _ in 0..<50 {
-            if !state.isLoading, !state.isIdle { return }
-            await Task.yield()
+        let deadline = Date().addingTimeInterval(2)
+        while state.isLoading || state.isIdle, Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(5))
         }
     }
 }

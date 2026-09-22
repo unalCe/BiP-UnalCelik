@@ -12,6 +12,7 @@ final class CDProduct: NSManagedObject {
     @NSManaged var imageURL: String?
     @NSManaged var productDescription: String?
     @NSManaged var listPosition: NSNumber?
+    @NSManaged var listFetchedAt: Date?
     @NSManaged var detailVisitedAt: Date?
 }
 
@@ -27,7 +28,6 @@ extension CDProduct {
         set { listPosition = newValue.map(NSNumber.init(value:)) }
     }
 
-    var isRetained: Bool { listPosition != nil || detailVisitedAt != nil }
 }
 
 public enum ProductDataModel {
