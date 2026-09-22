@@ -30,14 +30,7 @@ public struct ProductDetailView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Color.clear
                         .aspectRatio(1, contentMode: .fit)
-                        .overlay {
-                            GeometryReader { proxy in
-                                CachedImage(url: item.imageURL,
-                                            maxPointSize: proxy.size.width,
-                                            loader: imageLoader)
-                            }
-                        }
-                        .clipped()
+                        .overlay { CachedImage(url: item.imageURL, loader: imageLoader) }
 
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .firstTextBaseline, spacing: 12) {

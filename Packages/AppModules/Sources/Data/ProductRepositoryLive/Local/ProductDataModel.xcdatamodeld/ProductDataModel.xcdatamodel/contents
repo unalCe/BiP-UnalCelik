@@ -5,6 +5,7 @@
         <attribute name="detailVisitedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="NO" attributeType="String"/>
         <attribute name="imageURL" optional="YES" attributeType="String"/>
+        <attribute name="listFetchedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="listPosition" optional="YES" attributeType="Integer 64" usesScalarValueType="NO"/>
         <attribute name="name" optional="NO" attributeType="String" defaultValueString=""/>
         <attribute name="priceMinorUnits" optional="NO" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>

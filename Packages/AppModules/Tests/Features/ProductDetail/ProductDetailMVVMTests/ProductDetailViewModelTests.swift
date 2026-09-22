@@ -1,6 +1,7 @@
 import CommonKit
 import ProductDomain
 import ProductRepositoryMocks
+import Foundation
 import XCTest
 @testable import ProductDetailMVVM
 
@@ -71,9 +72,9 @@ final class ProductDetailViewModelTests: XCTestCase {
 @MainActor
 extension ProductDetailViewModel {
     func settle() async {
-        for _ in 0..<50 {
-            if !state.isLoading, !state.isIdle { return }
-            await Task.yield()
+        let deadline = Date().addingTimeInterval(2)
+        while state.isLoading || state.isIdle, Date() < deadline {
+            try? await Task.sleep(for: .milliseconds(5))
         }
     }
 }

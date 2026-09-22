@@ -122,9 +122,9 @@ refetches nothing — the visible proof that the core is untouched.
 
 ### Images
 
-The API serves 2418x2192 JPEGs, ~576 KB each, into a 177pt cell. Decoding those
-at full size costs ~21 MB of bitmap apiece, so the pipeline is size-aware end to
-end:
+The API's JPEGs vary from 257x285 to 2418x2192 and land in a 177pt cell.
+Decoding the largest at full size costs ~21 MB of bitmap, so the pipeline is
+size-aware end to end:
 
 ```
 ImageRequest(url:maxPixelSize:)   pixel size is part of the cache key,
@@ -138,9 +138,17 @@ ImageLoader                       cache-first
 ImagePrefetcher                   speculative, driven by the collection view
 ```
 
-A UIKit cell measures itself and asks for what it can show; SwiftUI passes its
-known frame. Measured on the list screen: resident memory fell from 67.0 MB to
-30.9 MB, and a full scroll issues exactly 12 requests for 12 products.
+Both renderers measure themselves and ask for what they can show — `CachedImageView`
+and `CachedImage` are the same idea twice. A 177pt cell at 3x wants 531px, which
+rounds up to the 640 bucket:
+
+```
+image 1   2418x2192 source  ->  640x580   1450 KB   (21 MB if decoded whole)
+image 3    550x441  source  ->  550x441    950 KB   (already under the bucket)
+```
+
+Measured on the list screen: resident memory fell from 67.0 MB to 30.9 MB, and a
+full scroll issues exactly 12 requests for 12 products.
 
 Encoded bytes are `URLSession`'s problem, held in a configured `URLCache`;
 decoded bitmaps are `NSCache`'s. Anything that can change asks for
@@ -154,25 +162,66 @@ bounds it deliberately rather than letting it grow:
 | Kept | Rule |
 |---|---|
 | The list | one whole page, replacing the previous one — 12 products here |
-| Details | the last **3** visited, by `detailVisitedAt` |
+| Details | every product in that page, once you have opened it |
 
-The interesting case is the overlap. A row is alive while it holds a
-`listPosition` *or* a `detailVisitedAt`, so evicting a detail drops the
-**description**, not the product:
+There is one table and one row per product. A "detail" is not a separate record
+— it is two more columns on the row the list already put there:
 
 ```
-visit 1 → 2 → 3 → 4, then go offline
-
-  4, 3, 2   name, price, image, description
-  1         name, price, image              ← its detail was evicted
-  5…12      name, price, image              ← never visited, still in the page
+id    listPosition   detailVisitedAt   productDescription
+1     0              14:02:11          An apple a day keeps the…   ← opened
+2     1              –                 –                           ← not opened
 ```
 
-A row without its description renders "Description unavailable." rather than
-dropping the section, so a product whose detail was evicted cannot be mistaken
-for one the API has no description for.
+So the page is what bounds the store. A product that drops out of the page takes
+its description with it, because the only way to a detail is tapping that
+product in the list — once it is gone, the row is unreachable.
 
-Reads stay remote-first; the store is what answers when the network doesn't.
+All twelve descriptions come to **1.9 KB**, which is why there is no tighter
+limit than the page. An earlier version kept only the last three visited, and
+browsing a fourth product silently threw the first one away — so returning to it
+went back to the network. Bytes are the right unit for images, not for rows this
+small; the byte budgets live on `NSCache` and `URLCache` where one entry is
+~9,000× bigger.
+
+### When the device is allowed to answer
+
+A cached copy is used **only while it is still current**. Every fetch is stamped
+with its time, and for ten minutes after that the device answers on its own —
+no request at all. Past ten minutes the cache stops being an answer: the network
+is asked, and if it cannot be reached the screen says so.
+
+```
+within 10 min          cache hit, instant, no request
+past 10 min            wait for the network
+past 10 min, offline   "You're offline" — never a stale price
+```
+
+**Why not the faster-looking options.** Two were built first and removed.
+
+*Remote-first with a cache fallback* — ask the network, fall back to disk on
+failure — is always available offline, but it will happily show a copy from any
+point in the past with no indication that it is old.
+
+*Show the cache immediately, refresh behind it* is quicker still and was the
+better-feeling version to use. It has the flaw that decided this: the user reads
+a price, and a moment later it changes under them. On a product list that is
+untidy. On anything that matters — a balance, a message, an order total — it is
+the difference between stale and wrong. And when the refresh never returns, the
+stale copy simply stays on screen wearing no label.
+
+A brief spinner is a smaller cost than a number the user cannot trust. So
+freshness decides, not latency, and the staleness window is explicit rather than
+a side effect of what happened to still be on disk. The window is injectable
+(`ProductRepository(timeToLive:)`) because ten minutes is right for a catalogue
+and wrong for a chat.
+
+**Images are exempt, deliberately.** They are addressed by URL: if the product
+data is current, its `imageURL` is current, and the bytes at that URL are what
+they are. `URLCache` governs them by HTTP freshness, and `NSCache` keeps the
+decoded copies. Ageing those out on a timer would re-decode constantly and buy
+no correctness.
+
 `CoreDataStack` in CoreKit knows nothing about products — it loads the caller's
 model from the caller's bundle, which is what keeps the entities down in the
 data layer.

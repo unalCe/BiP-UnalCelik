@@ -3,10 +3,7 @@ import Foundation
 import PersistenceKit
 import ProductDomain
 
-// Retention policy and its two numbers: ARCHITECTURE.md §5.
 struct CoreDataProductStore: ProductLocalDataSource {
-    static let retainedDetailCount = 3
-
     private let container: any PersistentContainerInterface
 
     init(container: any PersistentContainerInterface) {
@@ -15,26 +12,37 @@ struct CoreDataProductStore: ProductLocalDataSource {
 
     // MARK: - Reads
 
-    func products() async -> [Product] {
-        let rows = try? await container.read { context in
+    func products() async -> Cached<[Product]>? {
+        let page = try? await container.read { context -> Cached<[Product]>? in
             let request = CDProduct.fetchRequest()
             request.predicate = NSPredicate(format: "listPosition != nil")
             request.sortDescriptors = [NSSortDescriptor(key: "listPosition", ascending: true)]
-            return try context.fetch(request).map(ProductMapper.map)
+
+            let rows = try context.fetch(request)
+            guard let fetchedAt = rows.first?.listFetchedAt, !rows.isEmpty else { return nil }
+            return Cached(value: rows.map(ProductMapper.map), fetchedAt: fetchedAt)
         }
-        return rows ?? []
+        return page ?? nil
     }
 
-    func product(id: String) async -> Product? {
-        let row = try? await container.read { context in
-            try Self.find(id: id, in: context).map(ProductMapper.map)
+    func detail(id: String) async -> Cached<Product>? {
+        let row = try? await container.read { context -> Cached<Product>? in
+            let request = CDProduct.fetchRequest()
+            request.predicate = NSPredicate(
+                format: "id == %@ AND detailVisitedAt != nil", id
+            )
+            request.fetchLimit = 1
+
+            guard let row = try context.fetch(request).first,
+                  let fetchedAt = row.detailVisitedAt else { return nil }
+            return Cached(value: ProductMapper.map(row), fetchedAt: fetchedAt)
         }
         return row ?? nil
     }
 
     // MARK: - Writes
 
-    func saveListPage(_ products: [Product]) async {
+    func saveListPage(_ products: [Product], at date: Date) async {
         try? await container.write { context in
             let ids = products.map(\.id)
             let departed = CDProduct.fetchRequest()
@@ -47,29 +55,19 @@ struct CoreDataProductStore: ProductLocalDataSource {
                 let row = try Self.findOrCreate(id: product.id, in: context)
                 Self.merge(product, into: row)
                 row.pageIndex = index
+                row.listFetchedAt = date
             }
 
-            try Self.deleteUnretained(in: context)
+            try Self.deleteDeparted(in: context)
         }
     }
 
-    func saveDetail(_ product: Product) async {
+    func saveDetail(_ product: Product, at date: Date) async {
         try? await container.write { context in
             let row = try Self.findOrCreate(id: product.id, in: context)
             Self.merge(product, into: row)
-            row.detailVisitedAt = Date()
+            row.detailVisitedAt = date
 
-            let visited = CDProduct.fetchRequest()
-            visited.predicate = NSPredicate(format: "detailVisitedAt != nil")
-            visited.sortDescriptors = [
-                NSSortDescriptor(key: "detailVisitedAt", ascending: false)
-            ]
-            for evicted in try context.fetch(visited).dropFirst(Self.retainedDetailCount) {
-                evicted.detailVisitedAt = nil
-                evicted.productDescription = nil
-            }
-
-            try Self.deleteUnretained(in: context)
         }
     }
 
@@ -108,11 +106,9 @@ struct CoreDataProductStore: ProductLocalDataSource {
         }
     }
 
-    private static func deleteUnretained(in context: NSManagedObjectContext) throws {
+    private static func deleteDeparted(in context: NSManagedObjectContext) throws {
         let request = CDProduct.fetchRequest()
-        request.predicate = NSPredicate(
-            format: "listPosition == nil AND detailVisitedAt == nil"
-        )
+        request.predicate = NSPredicate(format: "listPosition == nil")
         for row in try context.fetch(request) { context.delete(row) }
     }
 }

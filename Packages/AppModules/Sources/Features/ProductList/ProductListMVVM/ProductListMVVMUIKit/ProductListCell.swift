@@ -8,14 +8,14 @@ import UIKit
 public final class ProductListCell: UICollectionViewCell {
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .preferredFont(forTextStyle: .subheadline)
+        label.font = ProductListLayout.titleFont
         label.numberOfLines = 2
         return label
     }()
 
     private let priceLabel: UILabel = {
         let label = UILabel()
-        label.font = .preferredFont(forTextStyle: .footnote)
+        label.font = ProductListLayout.priceFont
         label.textColor = .secondaryLabel
         return label
     }()
@@ -42,7 +42,7 @@ public final class ProductListCell: UICollectionViewCell {
         if let productImageView { return productImageView }
 
         let imageView = CachedImageView(loader: loader)
-        imageView.layer.cornerRadius = 8
+        imageView.layer.cornerRadius = ProductListLayout.imageCornerRadius
         imageView.layer.cornerCurve = .continuous
         productImageView = imageView
         setUpHierarchy(with: imageView)
@@ -57,11 +57,12 @@ public final class ProductListCell: UICollectionViewCell {
         }
 
         contentView.addSubview(titleLabel) {
-            $0.below(imageView, spacing: 8).pinHorizontally(to: contentView)
+            $0.below(imageView, spacing: ProductListLayout.titleSpacing)
+                .pinHorizontally(to: contentView)
         }
 
         contentView.addSubview(priceLabel) {
-            $0.below(titleLabel, spacing: 4)
+            $0.below(titleLabel, spacing: ProductListLayout.priceSpacing)
                 .pinHorizontally(to: contentView)
                 .bottom(to: contentView.bottomAnchor)
         }
