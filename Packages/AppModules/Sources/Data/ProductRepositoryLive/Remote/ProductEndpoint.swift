@@ -18,3 +18,15 @@ enum ProductEndpoint: Endpoint {
         }
     }
 }
+
+extension ProductEndpoint {
+    /// Whether a 403/404 here can only mean "no such product". True for detail,
+    /// which names one; the list names none, so the same code there is an
+    /// access failure.
+    var namesOneProduct: Bool {
+        switch self {
+        case .list: return false
+        case .detail: return true
+        }
+    }
+}

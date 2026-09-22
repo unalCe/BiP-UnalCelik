@@ -1,13 +1,9 @@
+import ProductListInterface
 import UIKit
 
+/// The UIKit construction of `ProductListMetrics`.
 enum ProductListLayout {
-    static let columns = 2
-    static let gutter: CGFloat = 16
     static let estimatedHeight: CGFloat = 240
-
-    static let imageCornerRadius: CGFloat = 8
-    static let titleSpacing: CGFloat = 8
-    static let priceSpacing: CGFloat = 4
 
     // computed, not stored: a stored font would freeze at whatever the content
     // size category was when the type first loaded
@@ -15,6 +11,9 @@ enum ProductListLayout {
     static var priceFont: UIFont { .preferredFont(forTextStyle: .footnote) }
 
     static func make() -> UICollectionViewCompositionalLayout {
+        let columns = ProductListMetrics.columns
+        let gutter = ProductListMetrics.gutter
+
         let item = NSCollectionLayoutItem(
             layoutSize: NSCollectionLayoutSize(
                 widthDimension: .fractionalWidth(1 / CGFloat(columns)),
@@ -41,13 +40,11 @@ enum ProductListLayout {
         return UICollectionViewCompositionalLayout(section: section)
     }
 
-    static func itemWidth(in containerWidth: CGFloat) -> CGFloat {
-        (containerWidth - gutter * CGFloat(columns + 1)) / CGFloat(columns)
-    }
-
     /// One image, one title line and one price line — what a cell measures to
     /// for the short names this API returns.
     static func cellHeight(itemWidth: CGFloat) -> CGFloat {
-        itemWidth + titleSpacing + titleFont.lineHeight + priceSpacing + priceFont.lineHeight
+        itemWidth
+            + ProductListMetrics.titleSpacing + titleFont.lineHeight
+            + ProductListMetrics.priceSpacing + priceFont.lineHeight
     }
 }

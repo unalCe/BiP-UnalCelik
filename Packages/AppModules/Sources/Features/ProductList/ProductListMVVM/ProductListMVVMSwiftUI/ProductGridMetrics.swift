@@ -1,19 +1,30 @@
+import ProductListInterface
 import SwiftUI
 
+/// The SwiftUI construction of `ProductListMetrics`.
 enum ProductGridMetrics {
-    static let columns = 2
-    static let gutter: CGFloat = 16
-
-    static let imageCornerRadius: CGFloat = 8
-    static let titleSpacing: CGFloat = 8
-    static let priceSpacing: CGFloat = 4
-
     static let gridColumns = Array(
-        repeating: GridItem(.flexible(), spacing: gutter),
-        count: columns
+        repeating: GridItem(.flexible(), spacing: ProductListMetrics.gutter),
+        count: ProductListMetrics.columns
     )
 
-    static func itemWidth(in containerWidth: CGFloat) -> CGFloat {
-        (containerWidth - gutter * CGFloat(columns + 1)) / CGFloat(columns)
+    /// Enough to fill a screen; the real count is unknown until the response
+    /// lands.
+    static let skeletonCount = 8
+
+    // text rarely fills its line, so neither do the placeholders for it
+    static let skeletonTitleWidthFraction: CGFloat = 0.85
+    static let skeletonPriceWidthFraction: CGFloat = 0.4
+}
+
+/// The one grid both the content and its skeleton are laid out in.
+struct ProductGrid<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        LazyVGrid(columns: ProductGridMetrics.gridColumns, spacing: ProductListMetrics.gutter) {
+            content
+        }
+        .padding(ProductListMetrics.gutter)
     }
 }

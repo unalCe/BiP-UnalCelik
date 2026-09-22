@@ -1,6 +1,7 @@
 import CommonKit
 import CommonUI
 import ImageCacheKit
+import ProductListInterface
 import SwiftUI
 
 struct ProductCell: View {
@@ -14,7 +15,7 @@ struct ProductCell: View {
                 .overlay { CachedImage(url: item.imageURL, loader: imageLoader) }
                 .clipShape(
                     RoundedRectangle(
-                        cornerRadius: ProductGridMetrics.imageCornerRadius,
+                        cornerRadius: ProductListMetrics.imageCornerRadius,
                         style: .continuous
                     )
                 )
@@ -22,9 +23,9 @@ struct ProductCell: View {
             Text(item.title)
                 .font(.subheadline)
                 .lineLimit(2)
-                .padding(.top, ProductGridMetrics.titleSpacing)
+                .padding(.top, ProductListMetrics.titleSpacing)
 
-            Spacer(minLength: ProductGridMetrics.priceSpacing)
+            Spacer(minLength: ProductListMetrics.priceSpacing)
 
             Text(item.formattedPrice)
                 .font(.footnote)
@@ -39,15 +40,15 @@ struct ProductCell: View {
 struct ProductCellSkeleton: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SkeletonBox(cornerRadius: ProductGridMetrics.imageCornerRadius)
+            SkeletonBox(cornerRadius: ProductListMetrics.imageCornerRadius)
                 .aspectRatio(1, contentMode: .fit)
 
-            SkeletonLine(.subheadline, widthFraction: 0.85)
-                .padding(.top, ProductGridMetrics.titleSpacing)
+            SkeletonLine(.subheadline, widthFraction: ProductGridMetrics.skeletonTitleWidthFraction)
+                .padding(.top, ProductListMetrics.titleSpacing)
 
-            Spacer(minLength: ProductGridMetrics.priceSpacing)
+            Spacer(minLength: ProductListMetrics.priceSpacing)
 
-            SkeletonLine(.footnote, widthFraction: 0.4)
+            SkeletonLine(.footnote, widthFraction: ProductGridMetrics.skeletonPriceWidthFraction)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

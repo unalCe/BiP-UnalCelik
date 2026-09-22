@@ -2,6 +2,7 @@ import CommonKit
 import CommonUI
 import ImageCacheKit
 import LayoutKit
+import ProductListInterface
 import UIKit
 
 @MainActor
@@ -42,7 +43,7 @@ public final class ProductListCell: UICollectionViewCell {
         if let productImageView { return productImageView }
 
         let imageView = CachedImageView(loader: loader)
-        imageView.layer.cornerRadius = ProductListLayout.imageCornerRadius
+        imageView.layer.cornerRadius = ProductListMetrics.imageCornerRadius
         imageView.layer.cornerCurve = .continuous
         productImageView = imageView
         setUpHierarchy(with: imageView)
@@ -57,12 +58,12 @@ public final class ProductListCell: UICollectionViewCell {
         }
 
         contentView.addSubview(titleLabel) {
-            $0.below(imageView, spacing: ProductListLayout.titleSpacing)
+            $0.below(imageView, spacing: ProductListMetrics.titleSpacing)
                 .pinHorizontally(to: contentView)
         }
 
         contentView.addSubview(priceLabel) {
-            $0.below(titleLabel, spacing: ProductListLayout.priceSpacing)
+            $0.below(titleLabel, spacing: ProductListMetrics.priceSpacing)
                 .pinHorizontally(to: contentView)
                 .bottom(to: contentView.bottomAnchor)
         }

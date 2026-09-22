@@ -1,12 +1,15 @@
 import CommonKit
 import CommonUI
 import ImageCacheKit
+import ProductDetailInterface
 import ProductDetailMVVM
 import SwiftUI
 
 public struct ProductDetailView: View {
     @ObservedObject private var viewModel: ProductDetailViewModel
     private let imageLoader: any ImageLoaderInterface
+
+    @ScaledMetric(relativeTo: .title2) private var titleFontSize = ProductDetailMetrics.titleFontSize
 
     public init(viewModel: ProductDetailViewModel,
                 imageLoader: any ImageLoaderInterface) {
@@ -27,14 +30,14 @@ public struct ProductDetailView: View {
             ProgressView()
         case .loaded(let item):
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: ProductDetailMetrics.imageSpacing) {
                     Color.clear
-                        .aspectRatio(1, contentMode: .fit)
+                        .aspectRatio(ProductDetailMetrics.imageAspectRatio, contentMode: .fit)
                         .overlay { CachedImage(url: item.imageURL, loader: imageLoader) }
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(alignment: .firstTextBaseline, spacing: 12) {
-                            Text(item.title).font(.title2.weight(.semibold))
+                    VStack(alignment: .leading, spacing: ProductDetailMetrics.textSpacing) {
+                        HStack(alignment: .firstTextBaseline, spacing: ProductDetailMetrics.textSpacing) {
+                            Text(item.title).font(.system(size: titleFontSize, weight: .semibold))
                             Spacer(minLength: 0)
                             Text(item.formattedPrice)
                                 .font(.headline)
@@ -44,28 +47,20 @@ public struct ProductDetailView: View {
                         if let description = item.description {
                             Text(description).font(.body)
                         } else {
-                            Text("Description unavailable.")
+                            Text(AppStrings.ProductDetail.descriptionUnavailable)
                                 .font(.body.italic())
                                 .foregroundStyle(.secondary)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, ProductDetailMetrics.horizontalInset)
+                    .padding(.bottom, ProductDetailMetrics.bottomInset)
                 }
             }
         case .empty:
-            ContentUnavailableView("Not available", systemImage: "tray")
+            ContentUnavailableView(AppStrings.ProductDetail.emptyTitle, systemImage: "tray")
         case .failed(let error):
-            VStack(spacing: 12) {
-                Text(error.title).font(.headline)
-                Text(error.message).font(.subheadline).foregroundStyle(.secondary)
-                if error.isRetryable {
-                    Button("Try again") { viewModel.retry() }
-                }
-            }
-            .multilineTextAlignment(.center)
-            .padding()
+            ErrorStateView(error: error) { viewModel.retry() }
         }
     }
 }

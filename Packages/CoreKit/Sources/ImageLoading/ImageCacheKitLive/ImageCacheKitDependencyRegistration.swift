@@ -4,13 +4,17 @@ import NetworkingKit
 
 public enum ImageCacheKitDependencyRegistration: DependencyRegistration {
     public static func register(to engine: DependencyEngine) {
+        register(to: engine, cache: ImageCacheConfiguration())
+    }
+
+    public static func register(to engine: DependencyEngine, cache: ImageCacheConfiguration) {
         // Resolves the client already registered by NetworkingKitLive, so the
         // app shares one transport across data and image traffic.
         guard let client: any HTTPClientInterface = engine.resolve((any HTTPClientInterface).self) else {
             fatalError("Register NetworkingKitDependencyRegistration before ImageCacheKit")
         }
 
-        let loader = ImageLoader(client: client)
+        let loader = ImageLoader(client: client, configuration: cache)
         let prefetcher = ImagePrefetcher(loader: loader)
 
         engine.register(value: loader as any ImageLoaderInterface, for: (any ImageLoaderInterface).self)

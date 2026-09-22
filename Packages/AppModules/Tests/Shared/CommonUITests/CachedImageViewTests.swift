@@ -18,6 +18,22 @@ private final class SlowImageLoader: ImageLoaderInterface, @unchecked Sendable {
     }
 }
 
+/// Fails on demand, counting attempts so a retry loop is visible to a test.
+private final class FailingImageLoader: ImageLoaderInterface, @unchecked Sendable {
+    private let lock = NSLock()
+    private var attempts = 0
+    private let error: any Error
+
+    init(error: any Error = ImageLoadingError.invalidData) { self.error = error }
+
+    var attemptCount: Int { lock.withLock { attempts } }
+
+    func image(for request: ImageRequest) async throws -> UIImage {
+        lock.withLock { attempts += 1 }
+        throw error
+    }
+}
+
 @MainActor
 final class CachedImageViewTests: XCTestCase {
     private let url = URL(string: "https://example.com/1.jpg")!
@@ -89,5 +105,61 @@ final class CachedImageViewTests: XCTestCase {
         sut.layoutIfNeeded()
 
         XCTAssertFalse(sut.isSweeping)
+    }
+
+    func test_loadFailure_stopsTheSweepAndShowsThePlaceholder() async {
+        let sut = makeSUT(loader: FailingImageLoader())
+        sut.setImage(from: url)
+        sut.layoutIfNeeded()
+
+        await waitUntil { sut.isShowingFailure }
+
+        XCTAssertFalse(sut.isSweeping, "a failed load must not shimmer forever")
+        XCTAssertEqual(sut.accessibilityLabel, "Image unavailable",
+                       "a broken image must not read as a loading one")
+    }
+
+    func test_loadFailure_doesNotRetryOnEveryLayoutPass() async {
+        let loader = FailingImageLoader()
+        let sut = makeSUT(loader: loader)
+        sut.setImage(from: url)
+        sut.layoutIfNeeded()
+
+        await waitUntil { sut.isShowingFailure }
+        // the placeholder invalidates intrinsicContentSize, so this is the pass
+        // the failure itself provokes
+        sut.setNeedsLayout()
+        sut.layoutIfNeeded()
+
+        XCTAssertEqual(loader.attemptCount, 1, "the same request must not loop")
+    }
+
+    func test_reconfiguringAfterAFailureRetries() async {
+        let loader = FailingImageLoader()
+        let sut = makeSUT(loader: loader)
+        sut.setImage(from: url)
+        sut.layoutIfNeeded()
+        await waitUntil { sut.isShowingFailure }
+
+        // what a reused cell does
+        sut.setImage(from: url)
+        sut.layoutIfNeeded()
+
+        await waitUntil { loader.attemptCount == 2 }
+        XCTAssertEqual(loader.attemptCount, 2, "a reused cell must get a fresh attempt")
+    }
+
+    func test_cancellationIsNotAFailure() async {
+        let loader = FailingImageLoader(error: CancellationError())
+        let sut = makeSUT(loader: loader)
+        sut.setImage(from: url)
+        sut.layoutIfNeeded()
+
+        await waitUntil { loader.attemptCount == 1 }
+        try? await Task.sleep(for: .milliseconds(50))
+
+        XCTAssertFalse(sut.isShowingFailure,
+                       "a resize cancels the load; flashing a broken image there is the bug")
+        XCTAssertTrue(sut.isSweeping)
     }
 }

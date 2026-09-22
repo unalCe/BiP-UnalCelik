@@ -2,8 +2,9 @@ import Combine
 import CommonKit
 import CommonUI
 import ImageCacheKit
-import ProductListMVVM
 import LayoutKit
+import ProductListInterface
+import ProductListMVVM
 import UIKit
 
 @MainActor
@@ -67,7 +68,7 @@ public final class ProductListViewController: UIViewController {
                            imageLoader: imageLoader)
         }
         super.init(nibName: nil, bundle: nil)
-        title = "Products"
+        title = AppStrings.ProductList.title
     }
 
     @available(*, unavailable)
@@ -108,7 +109,7 @@ public final class ProductListViewController: UIViewController {
             stateView.hide()
             apply(items)
         case .empty:
-            stateView.showMessage("No products available.", retryable: true)
+            stateView.showMessage(AppStrings.ProductList.emptyTitle, retryable: true)
         case .failed(let error):
             stateView.showMessage("\(error.title)\n\(error.message)", retryable: error.isRetryable)
         }
@@ -162,7 +163,7 @@ extension ProductListViewController: UICollectionViewDataSourcePrefetching {
     }
 
     private func imageRequests(for indexPaths: [IndexPath]) -> [ImageRequest] {
-        let pointSize = ProductListLayout.itemWidth(in: collectionView.bounds.width)
+        let pointSize = ProductListMetrics.itemWidth(in: collectionView.bounds.width)
 
         return indexPaths.compactMap { indexPath in
             guard

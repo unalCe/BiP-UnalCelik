@@ -14,6 +14,10 @@ let package = Package(
         .library(name: "DependencyEngine", targets: ["DependencyEngine"]),
         .library(name: "LayoutKit", targets: ["LayoutKit"]),
 
+        .library(name: "LoggingKit", targets: ["LoggingKit"]),
+        .library(name: "LoggingKitLive", targets: ["LoggingKitLive"]),
+        .library(name: "LoggingKitMocks", targets: ["LoggingKitMocks"]),
+
         .library(name: "NetworkingKit", targets: ["NetworkingKit"]),
         .library(name: "NetworkingKitLive", targets: ["NetworkingKitLive"]),
         .library(name: "NetworkingKitMocks", targets: ["NetworkingKitMocks"]),
@@ -35,6 +39,22 @@ let package = Package(
         .target(
             name: "LayoutKit",
             path: "Sources/Layout/LayoutKit"
+        ),
+
+        // ── Logging ──────────────────────────────────────────────────────
+        .target(
+            name: "LoggingKit",
+            path: "Sources/Logging/LoggingKit"
+        ),
+        .target(
+            name: "LoggingKitLive",
+            dependencies: ["LoggingKit"],
+            path: "Sources/Logging/LoggingKitLive"
+        ),
+        .target(
+            name: "LoggingKitMocks",
+            dependencies: ["LoggingKit"],
+            path: "Sources/Logging/LoggingKitMocks"
         ),
 
         // ── Networking ───────────────────────────────────────────────────
@@ -93,17 +113,19 @@ let package = Package(
         ),
         .testTarget(
             name: "NetworkingKitLiveTests",
-            dependencies: ["NetworkingKitLive", "NetworkingKitMocks"],
+            dependencies: ["NetworkingKitLive", "NetworkingKit", "NetworkingKitMocks"],
             path: "Tests/Networking/NetworkingKitLiveTests"
         ),
         .testTarget(
             name: "PersistenceKitLiveTests",
-            dependencies: ["PersistenceKitLive"],
+            dependencies: ["PersistenceKitLive", "PersistenceKit"],
             path: "Tests/Persistence/PersistenceKitLiveTests"
         ),
         .testTarget(
             name: "ImageCacheKitLiveTests",
-            dependencies: ["ImageCacheKitLive", "ImageCacheKitMocks", "NetworkingKitMocks"],
+            dependencies: [
+                "ImageCacheKitLive", "ImageCacheKit", "ImageCacheKitMocks", "NetworkingKit", "NetworkingKitMocks",
+            ],
             path: "Tests/ImageLoading/ImageCacheKitLiveTests"
         ),
     ],

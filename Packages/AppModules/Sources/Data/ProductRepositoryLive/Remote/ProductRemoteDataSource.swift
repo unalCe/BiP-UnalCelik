@@ -1,4 +1,5 @@
 import Foundation
+import LoggingKit
 import NetworkingKit
 import ProductDomain
 
@@ -10,11 +11,15 @@ protocol ProductRemoteDataSource: Sendable {
 struct HTTPProductRemoteDataSource: ProductRemoteDataSource {
     private let client: any HTTPClientInterface
     private let baseURL: URL
+    private let logger: any LoggerInterface
+    private let errorMapper: DomainErrorMapper
     private let decoder = JSONDecoder()
 
-    init(client: any HTTPClientInterface, baseURL: URL) {
+    init(client: any HTTPClientInterface, baseURL: URL, logger: any LoggerInterface) {
         self.client = client
         self.baseURL = baseURL
+        self.logger = logger
+        errorMapper = DomainErrorMapper(logger: logger)
     }
 
     func products() async throws -> [Product] {
@@ -31,7 +36,7 @@ struct HTTPProductRemoteDataSource: ProductRemoteDataSource {
         do {
             return try await client.send(endpoint.makeRequest(baseURL: baseURL))
         } catch {
-            throw DomainErrorMapper.map(error)
+            throw errorMapper.map(error, for: endpoint)
         }
     }
 
@@ -39,6 +44,8 @@ struct HTTPProductRemoteDataSource: ProductRemoteDataSource {
         do {
             return try decoder.decode(type, from: data)
         } catch {
+            // the user sees .invalidData; which key or type broke is only here
+            logger.error("decoding \(T.self) failed: \(error)", category: .networking)
             throw DomainError.invalidData
         }
     }

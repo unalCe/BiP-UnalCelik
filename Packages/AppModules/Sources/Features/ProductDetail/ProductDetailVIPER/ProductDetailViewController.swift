@@ -2,6 +2,7 @@ import CommonKit
 import CommonUI
 import ImageCacheKit
 import LayoutKit
+import ProductDetailInterface
 import UIKit
 
 @MainActor
@@ -22,7 +23,7 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = UIFontMetrics(forTextStyle: .title2)
-            .scaledFont(for: .systemFont(ofSize: 22, weight: .semibold))
+            .scaledFont(for: .systemFont(ofSize: ProductDetailMetrics.titleFontSize, weight: .semibold))
         label.numberOfLines = 0
         label.adjustsFontForContentSizeCategory = true
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -53,7 +54,7 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
         let stack = UIStackView(arrangedSubviews: [titleLabel, priceLabel])
         stack.axis = .horizontal
         stack.alignment = .firstBaseline
-        stack.spacing = 12
+        stack.spacing = ProductDetailMetrics.textSpacing
         return stack
     }()
 
@@ -91,18 +92,18 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
         contentView.addSubview(productImageView) {
             $0.top(to: contentView.topAnchor)
                 .pinHorizontally(to: contentView)
-                .aspectRatio(1)
+                .aspectRatio(ProductDetailMetrics.imageAspectRatio)
         }
 
         contentView.addSubview(headerStack) {
-            $0.below(productImageView, spacing: 16)
-                .pinHorizontally(to: contentView, insets: .horizontal(16))
+            $0.below(productImageView, spacing: ProductDetailMetrics.imageSpacing)
+                .pinHorizontally(to: contentView, insets: .horizontal(ProductDetailMetrics.horizontalInset))
         }
 
         contentView.addSubview(descriptionLabel) {
-            $0.below(headerStack, spacing: 12)
-                .pinHorizontally(to: contentView, insets: .horizontal(16))
-                .bottom(to: contentView.bottomAnchor, constant: 24)
+            $0.below(headerStack, spacing: ProductDetailMetrics.textSpacing)
+                .pinHorizontally(to: contentView, insets: .horizontal(ProductDetailMetrics.horizontalInset))
+                .bottom(to: contentView.bottomAnchor, constant: ProductDetailMetrics.bottomInset)
         }
 
         view.addSubview(stateView, pinnedToEdges: .zero)
@@ -120,7 +121,7 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
             stateView.hide()
             show(item)
         case .empty:
-            stateView.showMessage("Not available.", retryable: false)
+            stateView.showMessage(AppStrings.ProductDetail.emptyTitle, retryable: false)
         case .failed(let error):
             stateView.showMessage("\(error.title)\n\(error.message)", retryable: error.isRetryable)
         }
@@ -131,7 +132,7 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
         priceLabel.text = item.formattedPrice
         productImageView.setImage(from: item.imageURL)
 
-        descriptionLabel.text = item.description ?? "Description unavailable."
+        descriptionLabel.text = item.description ?? AppStrings.ProductDetail.descriptionUnavailable
         descriptionLabel.font = item.description == nil ? .italicBody : .body
         descriptionLabel.textColor = item.description == nil ? .secondaryLabel : .label
     }

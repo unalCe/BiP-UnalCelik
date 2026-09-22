@@ -49,3 +49,38 @@ final class ProductDisplayMapperTests: XCTestCase {
         XCTAssertEqual(display.description, "An apple a day.")
     }
 }
+
+/// An unresolved key comes back as the key itself, so these fail if the catalog
+/// is missing from the module's bundle rather than quietly showing
+/// `common.tryAgain` on screen.
+final class AppStringsTests: XCTestCase {
+    func test_resolvesFromTheCatalog() {
+        XCTAssertEqual(AppStrings.Common.tryAgain, "Try again")
+        XCTAssertEqual(AppStrings.ProductList.emptyTitle, "No products available")
+        XCTAssertEqual(AppStrings.ProductDetail.descriptionUnavailable, "Description unavailable.")
+    }
+
+    func test_formatsTheInterpolatedFlowName() {
+        XCTAssertEqual(AppStrings.FlowPicker.open("VIPER · UIKit"), "Open VIPER · UIKit")
+    }
+
+    func test_noStringFallsBackToItsKey() {
+        let all = [
+            AppStrings.Common.tryAgain, AppStrings.Common.imageUnavailable,
+            AppStrings.Error.notFoundTitle, AppStrings.Error.notFoundMessage,
+            AppStrings.Error.offlineTitle, AppStrings.Error.offlineMessage,
+            AppStrings.Error.invalidDataTitle, AppStrings.Error.invalidDataMessage,
+            AppStrings.Error.genericTitle, AppStrings.Error.genericMessage,
+            AppStrings.ProductList.title, AppStrings.ProductList.emptyTitle,
+            AppStrings.ProductDetail.descriptionUnavailable, AppStrings.ProductDetail.emptyTitle,
+            AppStrings.FlowPicker.title, AppStrings.FlowPicker.open("MVVM-C · UIKit"),
+            AppStrings.FlowPicker.viperLockReason,
+        ]
+        for string in all {
+            XCTAssertNil(
+                string.range(of: #"^[a-z]+[A-Za-z]*\.[A-Za-z.]+"#, options: .regularExpression),
+                "\(string) looks like an unresolved key"
+            )
+        }
+    }
+}

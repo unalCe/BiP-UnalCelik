@@ -20,12 +20,11 @@ public final class ImageLoader: ImageLoaderInterface, Sendable {
 
     public convenience init(
         client: any HTTPClientInterface,
-        totalCostLimit: Int = 64 * 1024 * 1024,
-        countLimit: Int = 100
+        configuration: ImageCacheConfiguration = ImageCacheConfiguration()
     ) {
         self.init(
             client: client,
-            cache: NSCacheImageCache(totalCostLimit: totalCostLimit, countLimit: countLimit),
+            cache: NSCacheImageCache(configuration),
             downsampler: CGImageDownsampler()
         )
     }

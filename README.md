@@ -1,6 +1,6 @@
 # Turkcell BiP iOS Case Study
 
-Product list + detail. **26 modules across two packages**, three presentation
+Product list + detail. **29 modules across two packages**, three presentation
 stacks over one shared Clean Architecture core.
 
 > **Start here:** `MVVM-C · UIKit` is the primary path. The other two exist to
@@ -52,7 +52,7 @@ is already booted; harmless.)
 TurkcellCase.xcworkspace                 ← open this
 App/TurkcellCase-UnalCelik.xcodeproj     app bundle only: @main, assets, plist
 Packages/AppModules/                     16 targets — this app's code
-Packages/CoreKit/                        10 targets — reusable infrastructure
+Packages/CoreKit/                        13 targets — reusable infrastructure
 ```
 
 The app target is a thin shell that links one product, `AppFeature`:
@@ -182,7 +182,7 @@ limit than the page. An earlier version kept only the last three visited, and
 browsing a fourth product silently threw the first one away — so returning to it
 went back to the network. Bytes are the right unit for images, not for rows this
 small; the byte budgets live on `NSCache` and `URLCache` where one entry is
-~9,000× bigger.
+~9,000× bigger. Their sizes are set in `AppConfiguration.default`.
 
 ### When the device is allowed to answer
 
@@ -212,8 +212,8 @@ stale copy simply stays on screen wearing no label.
 
 A brief spinner is a smaller cost than a number the user cannot trust. So
 freshness decides, not latency, and the staleness window is explicit rather than
-a side effect of what happened to still be on disk. The window is injectable
-(`ProductRepository(timeToLive:)`) because ten minutes is right for a catalogue
+a side effect of what happened to still be on disk. The window is a required argument
+(`ProductRepository(timeToLive:)`), set once in `AppConfiguration.default`, because ten minutes is right for a catalogue
 and wrong for a chat.
 
 **Images are exempt, deliberately.** They are addressed by URL: if the product
@@ -225,6 +225,20 @@ no correctness.
 `CoreDataStack` in CoreKit knows nothing about products — it loads the caller's
 model from the caller's bundle, which is what keeps the entities down in the
 data layer.
+
+### When something fails
+
+| Failure | What happens |
+|---|---|
+| Cache read fails | logged, treated as a miss — the network answers |
+| Cache write fails | logged; the request still succeeds with the fresh data |
+| Store will not open | destroyed and reopened; if that fails, the session runs in memory |
+| Image fails to load | shimmer stops, a placeholder shows, VoiceOver reads "Image unavailable" |
+| A flow module is not registered | logged and `assertionFailure` — never a dead button |
+
+Every absorbed error goes through `LoggingKit` (`os.Logger`), so the cause the user
+never sees is still in the log. User-facing copy lives in one English String
+Catalog in `CommonKit`, shared by all three stacks.
 
 ### No VIPER + SwiftUI
 
@@ -254,7 +268,10 @@ Verified against the endpoints, not assumed:
 - **Prices are integers in minor units** — `9` is 0.09, `557` is 5.57. Held as
   `Money(minorUnits:)`, never `Double`.
 - **An unknown id returns HTTP 403, not 404** — the S3 bucket denies listing,
-  so `DomainErrorMapper` maps both to `.notFound`.
+  so on **detail** `DomainErrorMapper` maps both to `.notFound`. On the list a
+  403 names no product; it is an access failure and shows the generic error.
+- **No currency field** — the domain assumes USD in `Money`; the store has no
+  default of its own.
 
 ## Verifying
 
@@ -262,13 +279,13 @@ These check the project without launching it — useful for confirming it is
 sound without opening Xcode.
 
 ```bash
-# 32 tests across 5 bundles.
+# 37 tests across 5 bundles.
 cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
 ```bash
-# 61 tests across 9 bundles, on a simulator.
+# 105 tests across 11 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -283,8 +300,8 @@ None of the three installs or runs the app — see **Running** above for that.
 
 ## Status
 
-List and detail both render on all three stacks; **93 tests green** (61
-AppModules + 32 CoreKit). Core Data and the image pipeline are real — no
+List and detail both render on all three stacks; **142 tests green** (105
+AppModules + 37 CoreKit). Core Data and the image pipeline are real — no
 stand-ins left.
 
 One thing outstanding: `ProductListVIPER`'s controller is still a state view

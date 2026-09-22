@@ -86,4 +86,23 @@ final class CoreDataStackTests: XCTestCase {
             XCTAssertEqual(name, "NoSuchModel")
         }
     }
+
+    /// The rebuild path a cache relies on instead of migration: what was on
+    /// disk is gone, and the same name opens again empty.
+    func test_destroyStore_leavesAnEmptyStoreBehind() async throws {
+        let modelName = "DestroyTest-\(UUID().uuidString)"
+        let model = makeTestModel()
+        defer { try? CoreDataStack.destroyStore(modelName: modelName, model: model) }
+
+        try await CoreDataStack(modelName: modelName, model: model).write { context in
+            NSEntityDescription.insertNewObject(forEntityName: "Thing", into: context)
+                .setValue("Apples", forKey: "name")
+        }
+
+        try CoreDataStack.destroyStore(modelName: modelName, model: model)
+
+        let reopened = try CoreDataStack(modelName: modelName, model: model)
+        let remaining = try await reopened.read { try count(in: $0) }
+        XCTAssertEqual(remaining, 0)
+    }
 }

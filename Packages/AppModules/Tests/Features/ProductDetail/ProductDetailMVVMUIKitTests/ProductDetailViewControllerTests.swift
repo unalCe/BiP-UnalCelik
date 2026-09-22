@@ -1,6 +1,7 @@
 import CommonKit
 import ImageCacheKit
 import ImageCacheKitMocks
+import ProductDetailInterface
 import ProductDetailMVVM
 import ProductDetailMVVMUIKit
 import ProductDomain
@@ -61,8 +62,9 @@ final class ProductDetailViewControllerTests: XCTestCase {
         let titleFrame = title.convert(title.bounds, to: sut.view)
         let priceFrame = price.convert(price.bounds, to: sut.view)
 
-        XCTAssertEqual(titleFrame.minX, 16, accuracy: 0.5, "title pinned to the leading margin")
-        XCTAssertEqual(priceFrame.maxX, screen.width - 16, accuracy: 0.5,
+        let inset = ProductDetailMetrics.horizontalInset
+        XCTAssertEqual(titleFrame.minX, inset, accuracy: 0.5, "title pinned to the leading margin")
+        XCTAssertEqual(priceFrame.maxX, screen.width - inset, accuracy: 0.5,
                        "price pinned to the trailing margin")
         XCTAssertLessThanOrEqual(titleFrame.maxX, priceFrame.minX, "they must not overlap")
         XCTAssertEqual(priceFrame.width, price.intrinsicContentSize.width, accuracy: 0.5,

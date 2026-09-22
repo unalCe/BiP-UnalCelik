@@ -1,4 +1,5 @@
 import CommonUI
+import ProductListInterface
 import UIKit
 
 /// Placeholder grid for the loading state, laid out from `ProductListLayout` so
@@ -9,6 +10,10 @@ import UIKit
 /// and one animation, and Core Animation paces it — nothing here runs per frame.
 @MainActor
 final class ProductListSkeletonView: UIView {
+    // text rarely fills its line, so neither do the placeholders for it
+    private static let titleWidthFraction: CGFloat = 0.85
+    private static let priceWidthFraction: CGFloat = 0.4
+
     private let shapes: CAShapeLayer = {
         let layer = CAShapeLayer()
         layer.fillColor = Skeleton.fill.cgColor
@@ -74,11 +79,14 @@ final class ProductListSkeletonView: UIView {
         for placeholder in placeholders {
             path.addRoundedRect(
                 in: placeholder.image,
-                cornerWidth: ProductListLayout.imageCornerRadius,
-                cornerHeight: ProductListLayout.imageCornerRadius
+                cornerWidth: ProductListMetrics.imageCornerRadius,
+                cornerHeight: ProductListMetrics.imageCornerRadius
             )
-            path.addRoundedRect(in: placeholder.title, cornerWidth: 4, cornerHeight: 4)
-            path.addRoundedRect(in: placeholder.price, cornerWidth: 4, cornerHeight: 4)
+            for text in [placeholder.title, placeholder.price] {
+                path.addRoundedRect(
+                    in: text, cornerWidth: Skeleton.cornerRadius, cornerHeight: Skeleton.cornerRadius
+                )
+            }
         }
         return path
     }
@@ -93,8 +101,8 @@ final class ProductListSkeletonView: UIView {
     static func placeholders(in rect: CGRect) -> [Placeholder] {
         guard rect.width > 0 else { return [] }
 
-        let gutter = ProductListLayout.gutter
-        let width = ProductListLayout.itemWidth(in: rect.width)
+        let gutter = ProductListMetrics.gutter
+        let width = ProductListMetrics.itemWidth(in: rect.width)
         let height = ProductListLayout.cellHeight(itemWidth: width)
         let titleHeight = ProductListLayout.titleFont.lineHeight
         let priceHeight = ProductListLayout.priceFont.lineHeight
@@ -102,17 +110,19 @@ final class ProductListSkeletonView: UIView {
         var result: [Placeholder] = []
         var y = rect.minY + gutter
         while y < rect.maxY {
-            for column in 0..<ProductListLayout.columns {
+            for column in 0..<ProductListMetrics.columns {
                 let x = rect.minX + gutter + CGFloat(column) * (width + gutter)
-                let titleY = y + width + ProductListLayout.titleSpacing
+                let titleY = y + width + ProductListMetrics.titleSpacing
 
                 result.append(
                     Placeholder(
                         image: CGRect(x: x, y: y, width: width, height: width),
-                        title: CGRect(x: x, y: titleY, width: width * 0.85, height: titleHeight),
+                        title: CGRect(
+                            x: x, y: titleY, width: width * titleWidthFraction, height: titleHeight
+                        ),
                         price: CGRect(
-                            x: x, y: titleY + titleHeight + ProductListLayout.priceSpacing,
-                            width: width * 0.4, height: priceHeight
+                            x: x, y: titleY + titleHeight + ProductListMetrics.priceSpacing,
+                            width: width * priceWidthFraction, height: priceHeight
                         )
                     )
                 )
