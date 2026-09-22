@@ -50,7 +50,8 @@ let package = Package(
                 .product(name: "PersistenceKit", package: "CoreKit"),
                 .product(name: "DependencyEngine", package: "CoreKit"),
             ],
-            path: "Sources/Data/ProductRepositoryLive"
+            path: "Sources/Data/ProductRepositoryLive",
+            resources: [.process("Local/ProductDataModel.xcdatamodeld")]
         ),
         .target(
             name: "ProductRepositoryMocks",
@@ -180,7 +181,7 @@ let package = Package(
             dependencies: [
                 "ProductRepositoryLive",
                 .product(name: "NetworkingKitMocks", package: "CoreKit"),
-                .product(name: "PersistenceKitMocks", package: "CoreKit"),
+                .product(name: "PersistenceKitLive", package: "CoreKit"),
             ],
             path: "Tests/Data/ProductRepositoryLiveTests"
         ),

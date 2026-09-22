@@ -4,7 +4,6 @@ import ImageCacheKitLive
 import NetworkingKit
 import NetworkingKitLive
 import PersistenceKit
-import PersistenceKitLive
 import ProductDetailInterface
 import ProductDomain
 import ProductListInterface
@@ -57,7 +56,7 @@ final class FlowRegistrationTests: XCTestCase {
 
     private func makeBootstrappedEngine() -> DependencyEngine {
         let engine = DependencyEngine()
-        AppDependencyRegistration.register(to: engine)
+        AppDependencyRegistration.register(to: engine, inMemory: true)
         return engine
     }
 }
