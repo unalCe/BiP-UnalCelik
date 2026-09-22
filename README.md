@@ -227,7 +227,7 @@ cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
 ```
 
 ```bash
-# 77 tests across 9 bundles, on a simulator.
+# 81 tests across 11 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -253,7 +253,7 @@ Performance tracing launch arguments (`-perfHUD YES`, `-perfTracing NO`,
 
 ## Status
 
-List and detail both render on all three stacks; **127 tests green** (77
+List and detail both render on all three stacks; **131 tests green** (81
 AppModules + 50 CoreKit). Core Data and the image pipeline are real — no
 stand-ins left.
 

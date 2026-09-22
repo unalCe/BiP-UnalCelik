@@ -195,7 +195,10 @@ let package = Package(
         ),
         .testTarget(
             name: "CommonUITests",
-            dependencies: ["CommonUI"],
+            dependencies: [
+                "CommonUI",
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+            ],
             path: "Tests/Shared/CommonUITests"
         ),
         .testTarget(

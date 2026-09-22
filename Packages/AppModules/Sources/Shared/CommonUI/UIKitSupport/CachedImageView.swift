@@ -12,6 +12,8 @@ public final class CachedImageView: UIImageView {
     /// Open from `setImage` until the image lands: how long the placeholder
     /// was on screen. A reuse before that ends it as `.cancelled`.
     private var visibleWait: PerformanceInterval?
+    private let shimmer = ShimmerSweep()
+    private var wantsShimmer = false
 
     public init(loader: any ImageLoaderInterface,
                 tracer: any PerformanceTracing = NoopPerformanceTracer()) {
@@ -21,18 +23,23 @@ public final class CachedImageView: UIImageView {
         contentMode = .scaleAspectFill
         clipsToBounds = true
         backgroundColor = Skeleton.fill
+        shimmer.attach(to: layer)
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    public func setImage(from url: URL?, placeholder: UIImage? = nil) {
+    public func setImage(from url: URL?,
+                         placeholder: UIImage? = nil) {
         cancel()
         image = placeholder
         pendingURL = url
+        wantsShimmer = url != nil && placeholder == nil
         if url != nil { visibleWait = tracer.begin(.imageVisibleWait) }
         setNeedsLayout()
     }
+
+    var isSweeping: Bool { shimmer.isRunning }
 
     public func cancel() {
         endVisibleWait(.cancelled)
@@ -40,10 +47,26 @@ public final class CachedImageView: UIImageView {
         loadTask = nil
         pendingURL = nil
         currentRequest = nil
+        wantsShimmer = false
+        shimmer.stop()
     }
 
     public override func layoutSubviews() {
         super.layoutSubviews()
+
+        // the cell sets cornerRadius after init, so re-read it every pass
+        shimmer.layout(
+            in: bounds,
+            clippedTo: UIBezierPath(
+                roundedRect: bounds, cornerRadius: layer.cornerRadius
+            ).cgPath
+        )
+        // started here, not in setImage: the band is sized from bounds, which
+        // are still zero when the cell configures itself
+        if wantsShimmer, !shimmer.isRunning {
+            shimmer.start()
+        }
+
         loadIfNeeded()
     }
 
@@ -68,6 +91,8 @@ public final class CachedImageView: UIImageView {
             guard self.currentRequest == request else { return }
             guard let loaded else { return self.endVisibleWait(.failed) }
             self.image = loaded
+            self.wantsShimmer = false
+            self.shimmer.stop()
             self.endVisibleWait(.completed)
         }
     }
