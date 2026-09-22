@@ -36,6 +36,12 @@ public final class ProductListViewController: UIViewController {
         return view
     }()
 
+    private let skeletonView: ProductListSkeletonView = {
+        let view = ProductListSkeletonView()
+        view.isHidden = true
+        return view
+    }()
+
     private lazy var stateView: StateContainerView = {
         let view = StateContainerView()
         view.onRetry = { [weak self] in self?.viewModel.retry() }
@@ -88,6 +94,7 @@ public final class ProductListViewController: UIViewController {
 
     private func setUpHierarchy() {
         view.addSubview(collectionView, pinnedToEdges: .zero)
+        view.addSubview(skeletonView, pinnedToEdges: .zero)
         view.addSubview(stateView, pinnedToEdges: .zero)
     }
 
@@ -100,11 +107,14 @@ public final class ProductListViewController: UIViewController {
     private func render(_ state: ViewState<[ProductDisplayModel]>) {
         collectionView.isHidden = state.value == nil
 
+        if case .loading = state {} else { skeletonView.stop() }
+
         switch state {
         case .idle:
             stateView.hide()
         case .loading:
-            stateView.showLoading()
+            stateView.hide()
+            skeletonView.start()
         case .loaded(let items):
             stateView.hide()
             apply(items)
