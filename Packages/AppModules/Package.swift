@@ -194,6 +194,11 @@ let package = Package(
             path: "Tests/Data/ProductRepositoryLiveTests"
         ),
         .testTarget(
+            name: "CommonUITests",
+            dependencies: ["CommonUI"],
+            path: "Tests/Shared/CommonUITests"
+        ),
+        .testTarget(
             name: "CommonKitTests",
             dependencies: ["CommonKit"],
             path: "Tests/Shared/CommonKitTests"
@@ -214,6 +219,16 @@ let package = Package(
                 .product(name: "PerformanceKitMocks", package: "CoreKit"),
             ],
             path: "Tests/Features/ProductList/ProductListMVVMUIKitTests"
+        ),
+        .testTarget(
+            name: "ProductListMVVMSwiftUITests",
+            dependencies: [
+                "ProductListMVVMSwiftUI", "ProductListMVVMUIKit", "ProductListMVVM",
+                "ProductRepositoryMocks", "ProductDomain", "CommonKit",
+                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+            ],
+            path: "Tests/Features/ProductList/ProductListMVVMSwiftUITests"
         ),
         .testTarget(
             name: "ProductListVIPERTests",

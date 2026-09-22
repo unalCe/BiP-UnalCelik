@@ -20,7 +20,7 @@ public final class CachedImageView: UIImageView {
         super.init(frame: .zero)
         contentMode = .scaleAspectFill
         clipsToBounds = true
-        backgroundColor = .secondarySystemFill
+        backgroundColor = Skeleton.fill
     }
 
     @available(*, unavailable)

@@ -2,37 +2,37 @@ import UIKit
 
 enum ProductListLayout {
     static let columns = 2
-    static let spacing: CGFloat = 8
+    static let gutter: CGFloat = 16
+    static let estimatedHeight: CGFloat = 240
 
     static func make() -> UICollectionViewCompositionalLayout {
         let item = NSCollectionLayoutItem(
             layoutSize: NSCollectionLayoutSize(
                 widthDimension: .fractionalWidth(1 / CGFloat(columns)),
-                heightDimension: .fractionalHeight(1)
+                heightDimension: .estimated(estimatedHeight)
             )
-        )
-        item.contentInsets = NSDirectionalEdgeInsets(
-            top: spacing, leading: spacing, bottom: spacing, trailing: spacing
         )
 
         let group = NSCollectionLayoutGroup.horizontal(
             layoutSize: NSCollectionLayoutSize(
                 widthDimension: .fractionalWidth(1),
-                heightDimension: .estimated(240)
+                heightDimension: .estimated(estimatedHeight)
             ),
-            subitems: [item]
+            repeatingSubitem: item,
+            count: columns
         )
+        group.interItemSpacing = .fixed(gutter)
 
         let section = NSCollectionLayoutSection(group: group)
+        section.interGroupSpacing = gutter
         section.contentInsets = NSDirectionalEdgeInsets(
-            top: spacing, leading: spacing, bottom: spacing, trailing: spacing
+            top: gutter, leading: gutter, bottom: gutter, trailing: gutter
         )
 
         return UICollectionViewCompositionalLayout(section: section)
     }
 
     static func itemWidth(in containerWidth: CGFloat) -> CGFloat {
-        let sectionWidth = containerWidth - spacing * 2
-        return sectionWidth / CGFloat(columns) - spacing * 2
+        (containerWidth - gutter * CGFloat(columns + 1)) / CGFloat(columns)
     }
 }
