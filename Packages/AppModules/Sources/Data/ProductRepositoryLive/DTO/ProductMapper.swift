@@ -1,5 +1,6 @@
 import Foundation
 import ProductDomain
+import SharedDomain
 
 enum ProductMapper {
     static func map(_ dto: ProductDTO) -> Product {

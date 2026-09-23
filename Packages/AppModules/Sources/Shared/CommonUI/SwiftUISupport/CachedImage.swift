@@ -11,12 +11,19 @@ public struct CachedImage: View {
         case failed
     }
 
+    private struct Request: Equatable {
+        let url: URL?
+        let side: CGFloat
+    }
+
     private let url: URL?
     private let loader: ImageLoaderInterface
 
     @Environment(\.displayScale) private var displayScale
     @State private var phase: Phase = .loading
     @State private var requestedURL: URL?
+
+    // MARK: - Lifecycle
 
     public init(url: URL?, loader: ImageLoaderInterface) {
         self.url = url
@@ -35,6 +42,8 @@ public struct CachedImage: View {
                 }
         }
     }
+
+    // MARK: - Subviews
 
     @ViewBuilder
     private var content: some View {
@@ -56,6 +65,8 @@ public struct CachedImage: View {
                 .accessibilityLabel(AppStrings.Common.imageUnavailable)
         }
     }
+
+    // MARK: - Private Funcs
 
     private func load(pointSize: CGFloat) async {
         // `.task(id:)` re-fires on every resize too; only a new URL is worth
@@ -80,10 +91,5 @@ public struct CachedImage: View {
             guard !(error is CancellationError), !Task.isCancelled else { return }
             phase = .failed
         }
-    }
-
-    private struct Request: Equatable {
-        let url: URL?
-        let side: CGFloat
     }
 }

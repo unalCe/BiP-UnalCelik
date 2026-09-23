@@ -5,6 +5,7 @@ public enum NetworkError: Error, Sendable {
     case transport(Error)
     case unacceptableStatus(code: Int, body: Data)
     case invalidResponse
+    case decoding(Error)
 }
 
 public extension NetworkError {

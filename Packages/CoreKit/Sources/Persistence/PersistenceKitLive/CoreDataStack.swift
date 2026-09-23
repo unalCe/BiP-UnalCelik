@@ -6,6 +6,8 @@ public final class CoreDataStack: PersistentContainerInterface, @unchecked Senda
     private let container: NSPersistentContainer
     private let context: NSManagedObjectContext
 
+    // MARK: - Lifecycle
+
     public convenience init(modelName: String, bundle: Bundle, inMemory: Bool = false) throws {
         try self.init(
             modelName: modelName,
@@ -32,6 +34,8 @@ public final class CoreDataStack: PersistentContainerInterface, @unchecked Senda
         context = container.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
+
+    // MARK: - Public Funcs
 
     public func read<T: Sendable>(
         _ work: @escaping @Sendable (NSManagedObjectContext) throws -> T

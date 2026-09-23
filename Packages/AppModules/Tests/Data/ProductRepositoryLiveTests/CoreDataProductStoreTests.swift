@@ -2,6 +2,7 @@ import CoreData
 import PersistenceKit
 import PersistenceKitLive
 import ProductDomain
+import SharedDomain
 import XCTest
 @testable import ProductRepositoryLive
 

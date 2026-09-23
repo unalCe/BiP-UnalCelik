@@ -13,11 +13,7 @@ public final class MockHTTPClient: HTTPClientInterface, @unchecked Sendable {
     private var defaultBehaviour: Behaviour?
     private var recorded: [HTTPRequest] = []
 
-    public var sentRequests: [HTTPRequest] {
-        lock.withLock { recorded }
-    }
-
-    public var sendCount: Int { sentRequests.count }
+    // MARK: - Lifecycle
 
     public init(always behaviour: Behaviour) {
         self.queued = []
@@ -29,6 +25,14 @@ public final class MockHTTPClient: HTTPClientInterface, @unchecked Sendable {
         self.queued = queue
         self.defaultBehaviour = nil
     }
+
+    // MARK: - Public Funcs
+
+    public var sentRequests: [HTTPRequest] {
+        lock.withLock { recorded }
+    }
+
+    public var sendCount: Int { sentRequests.count }
 
     public func send(_ request: HTTPRequest) async throws -> HTTPResponse {
         let behaviour: Behaviour = lock.withLock {

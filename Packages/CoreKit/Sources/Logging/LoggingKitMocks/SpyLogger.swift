@@ -18,7 +18,11 @@ public final class SpyLogger: LoggerInterface, @unchecked Sendable {
     private let lock = NSLock()
     private var recorded: [Entry] = []
 
+    // MARK: - Lifecycle
+
     public init() {}
+
+    // MARK: - Public Funcs
 
     public var entries: [Entry] {
         lock.lock()
@@ -35,6 +39,8 @@ public final class SpyLogger: LoggerInterface, @unchecked Sendable {
     public func error(_ message: String, category: LogCategory) {
         record(Entry(level: .error, category: category, message: message))
     }
+
+    // MARK: - Private Funcs
 
     private func record(_ entry: Entry) {
         lock.lock()

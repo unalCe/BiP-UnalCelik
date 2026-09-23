@@ -1,3 +1,4 @@
+import CachingKit
 import CoreData
 import Foundation
 import PersistenceKit
@@ -6,26 +7,28 @@ import ProductDomain
 struct CoreDataProductStore: ProductLocalDataSource {
     private let container: PersistentContainerInterface
 
+    // MARK: - Lifecycle
+
     init(container: PersistentContainerInterface) {
         self.container = container
     }
 
     // MARK: - Reads
 
-    func products() async throws -> Cached<[Product]>? {
-        try await container.read { context -> Cached<[Product]>? in
+    func products() async throws -> CacheEntry<[Product]>? {
+        try await container.read { context -> CacheEntry<[Product]>? in
             let request = CDProduct.fetchRequest()
             request.predicate = NSPredicate(format: "listPosition != nil")
             request.sortDescriptors = [NSSortDescriptor(key: "listPosition", ascending: true)]
 
             let rows = try context.fetch(request)
             guard let fetchedAt = rows.first?.listFetchedAt, !rows.isEmpty else { return nil }
-            return Cached(value: rows.map(ProductMapper.map), fetchedAt: fetchedAt)
+            return CacheEntry(value: rows.map(ProductMapper.map), fetchedAt: fetchedAt)
         }
     }
 
-    func detail(id: String) async throws -> Cached<Product>? {
-        try await container.read { context -> Cached<Product>? in
+    func detail(id: String) async throws -> CacheEntry<Product>? {
+        try await container.read { context -> CacheEntry<Product>? in
             let request = CDProduct.fetchRequest()
             request.predicate = NSPredicate(
                 format: "id == %@ AND detailVisitedAt != nil", id
@@ -34,7 +37,7 @@ struct CoreDataProductStore: ProductLocalDataSource {
 
             guard let row = try context.fetch(request).first,
                   let fetchedAt = row.detailVisitedAt else { return nil }
-            return Cached(value: ProductMapper.map(row), fetchedAt: fetchedAt)
+            return CacheEntry(value: ProductMapper.map(row), fetchedAt: fetchedAt)
         }
     }
 

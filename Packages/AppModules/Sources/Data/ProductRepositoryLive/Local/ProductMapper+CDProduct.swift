@@ -1,5 +1,6 @@
 import Foundation
 import ProductDomain
+import SharedDomain
 
 extension ProductMapper {
     static func map(_ row: CDProduct) -> Product {

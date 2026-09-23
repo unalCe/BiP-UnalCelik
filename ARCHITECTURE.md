@@ -134,7 +134,7 @@ Recorded when the error-handling and hardcoded-value review was worked through.
 
 | Decision | Why |
 |---|---|
-| One `Localizable.xcstrings`, in `CommonKit`, English only | every renderer already depends on `CommonKit`, and the copy had drifted precisely because each stack held its own ("No products" vs "No products available."). One catalog means one wording per concept. English only because unreviewed translations are worse than none. Adding a language is a catalog edit, not a code change |
+| Each module owns its catalog, through `AppStrings` extensions | `CommonKit` holds copy every screen shares (`Common`, `Error`). `ProductPresentation` adds `AppStrings.ProductList` / `.ProductDetail` and `AppFeature` adds `.FlowPicker`, each resolved from its own `.module` bundle. Call sites read the same everywhere, and a new domain brings its copy with it instead of growing a shared catalog. The copy had drifted because each *renderer* held its own ("No products" vs "No products available."); one catalog per owner still gives one wording per concept. English only, because unreviewed translations are worse than none |
 | Strings go through `AppStrings`, keyed semantically | `productList.empty.title`, not the English sentence, so rewording the copy does not orphan a translation. `String(localized:bundle: .module)` has no `defaultValue`, which means a missing entry comes back as its key. `AppStringsTests` checks every accessor, so that failure shows up in a test, not in the UI |
 | SwiftUI views take the resolved `String`, never a literal | `Text("…")`, `Button("…")` and `ContentUnavailableView("…")` look up a `LocalizedStringKey` in the **main** bundle, where this catalog is not. Passing a `String` picks the `StringProtocol` overloads, which render it verbatim |
 | The interpolated button is a catalog entry with `%@`, not concatenation | `AppStrings.FlowPicker.open(_:)` interpolates into the `LocalizationValue`, so the catalog key is `flowPicker.open %@`. A translation can then put the name wherever the grammar needs it. The flow names themselves ("MVVM-C", "VIPER", "UIKit", "SwiftUI") are product names and stay literals |
@@ -163,29 +163,55 @@ Recorded when the error-handling and hardcoded-value review was worked through.
 | Dropping the default needed no migration and does not reach the rebuild ladder | measured: `momc` on both versions gives the same `CDProduct` version hash (`RI7IC26G…`) and the same model checksum. Default values are not part of the hash, so existing on-disk stores open unchanged. Had the hash changed, `PersistentStoreLoader` would have handled it, because an incompatible store fails `openOnDisk` and is then destroyed and reopened |
 | Manifests declare every module a target imports | wave 2 left `AppFeature` importing `ImageCacheKit` and `PersistenceKit` through transitive links, and several test targets did the same. Every edge is now explicit (list below), so each `dependencies:` list states exactly what its target imports |
 
+**Networking and cache orchestration are composed, not inherited**
+
+| Decision | Why |
+|---|---|
+| `APIClient` in `NetworkingKit` decodes; `HTTPClientInterface` stays raw transport | request building, sending and generic decoding were written out per data source, each with its own `JSONDecoder` and `do/catch`. `APIClient.execute(_:as:)` does it once. A domain still owns its DTOs, endpoints and mapping, and passes a configured `JSONDecoder` when its payloads need one |
+| A decoding failure is `NetworkError.decoding(underlying)` | the cause is kept as an infrastructure error instead of being turned into `DomainError.invalidData` inside the data source. `NetworkingKit` knows nothing about `ProductDomain` |
+| Only the repository translates to `DomainError` | the remote data source used to map errors and the repository mapped them again. Now failures flow `URLSession → NetworkError → ProductRepository → DomainError`, and `DomainErrorMapper` has exactly one caller |
+| `CacheAsideLoader` owns the cache algorithm | fresh entry → answer; else fetch → best-effort write → return. A failed read is a logged miss, a failed write is logged and the fetched value still returned, and a remote failure propagates. `products()` and `product(id:)` were two copies of that flow; now each is one `load(read:fetch:write:)` call |
+| Composition over a `BaseRepository` | repositories share behaviour, not identity. A base class would collect every repository's hooks (stale fallback, pagination, invalidation, mutations) until it owned all their policies. The repository stays `final` and holds a loader, two data sources and a mapper |
+| `FreshnessPolicy` + injected `now` | freshness is one comparison with an exclusive boundary, and the clock is a parameter. Tests move time instead of sleeping or passing a zero TTL |
+| `Cached` became `CacheEntry` | it is the loader's vocabulary, not a product type |
+| The cache algorithm lives in `CachingKit`, in CoreKit | `CacheEntry`, `FreshnessPolicy` and `CacheAsideLoader` know nothing about products, so any repository in the app composes the same loader instead of rewriting fresh-else-fetch-then-write. `CachingKit` depends on Foundation and `LoggingKit` only. It is not in `CommonKit`, which is app-level and depends on `ProductDomain`. Storage stays per domain: the Core Data store keeps entity queries and page-retention rules, and never becomes a generic key-value cache |
+
+**Shared vocabulary sits below the domains, not inside one**
+
+| Decision | Why |
+|---|---|
+| `Money` and `DomainError` live in `SharedDomain` | they were in `ProductDomain`, so anything that formats money or presents an error had to import the product domain, and a basket or payment domain would have had to as well. `SharedDomain` is the domain kernel: it depends on nothing, and every domain and `CommonKit` build on it |
+| Domains do not depend on `CommonKit` | `CommonKit` is presentation (`ViewState`, `ErrorPresenter`, strings). A domain importing it would point the arrows outward. What domains share is the kernel; `CommonKit` sits on the same kernel beside them |
+| Product presentation is its own module | `ProductDisplayModel`, `ProductDisplayMapper` and product copy were in `CommonKit`, which pinned "common" to one feature. `ProductPresentation` (`ProductDomain` + `CommonKit`) is shared by the list and detail features only; another domain would get its own |
+
 ### Source grouping
 
 Within each package, sources are grouped by layer for navigation only:
 
 ```
-Packages/AppModules/Sources/        Packages/CoreKit/Sources/
-  Application/AppFeature/             DependencyInjection/DependencyEngine/
-  Domain/ProductDomain/               Layout/LayoutKit/
-  Data/ProductRepositoryLive/         Networking/NetworkingKit{,Live,Mocks}/
-  Shared/CommonKit/ CommonUI/         Persistence/PersistenceKit{,Live}/
-                                      Logging/LoggingKit{,Live,Mocks}/
-  Features/ProductList/…              ImageLoading/ImageCacheKit{,Live,Mocks}/
-  Features/ProductDetail/…
+Packages/AppModules/Sources/            Packages/CoreKit/Sources/
+  Application/AppFeature/                 DependencyInjection/DependencyEngine/
+  Domain/SharedDomain/                    Layout/LayoutKit/
+  Domain/ProductDomain/                   Networking/NetworkingKit{,Live,Mocks}/
+  Data/ProductRepositoryLive/             Persistence/PersistenceKit{,Live}/
+  Shared/CommonKit/ CommonUI/             Logging/LoggingKit{,Live,Mocks}/
+  Features/Product/ProductPresentation/   Caching/CachingKit/
+  Features/Product/ProductList/…          ImageLoading/ImageCacheKit{,Live,Mocks}/
+  Features/Product/ProductDetail/…
 ```
 
 Every target carries an explicit `path:`, so the grouping folders stay folders
 and each module remains separately declared. Grouping changed no target name,
 product name, import, or dependency edge.
 
+`Shared/` holds only domain-free code. Everything about products that the
+screens share sits under `Features/Product/`, next to the features that use it;
+another domain would get its own `Features/<Domain>/` folder.
+
 Each feature nests its MVVM renderers inside the ViewModel's own folder:
 
 ```
-Features/ProductDetail/
+Features/Product/ProductDetail/
   ProductDetailInterface/
   ProductDetailMVVM/                  ← target: the ViewModel only
     ProductDetailViewModel.swift
@@ -200,8 +226,8 @@ in `exclude:`:
 ```swift
 .target(
     name: "ProductDetailMVVM",
-    dependencies: ["ProductDomain", "CommonKit"],
-    path: "Sources/Features/ProductDetail/ProductDetailMVVM",
+    dependencies: ["ProductPresentation", "ProductDomain", "CommonKit"],
+    path: "Sources/Features/Product/ProductDetail/ProductDetailMVVM",
     exclude: ["ProductDetailMVVMUIKit", "ProductDetailMVVMSwiftUI"]
 ),
 ```
@@ -280,16 +306,24 @@ XCUITest hosts**.
                           app target
 ```
 
-`LoggingKit` / `LoggingKitLive` / `LoggingKitMocks` sit beside the other kits and are
-left out of the drawing for width: the interface depends on nothing,
-`ProductRepositoryLive` depends on `LoggingKit`, and only `AppFeature` links
-`LoggingKitLive`.
+`LoggingKit` / `LoggingKitLive` / `LoggingKitMocks` and `CachingKit` sit beside
+the other kits and are left out of the drawing for width: `LoggingKit` depends
+on nothing, `CachingKit` only on `LoggingKit`. `ProductRepositoryLive` depends
+on both, and only `AppFeature` links `LoggingKitLive`.
+
+The drawing predates `SharedDomain` and `ProductPresentation`. Read it with
+two corrections: `ProductDomain` and `CommonKit` both sit on `SharedDomain`
+(`Money`, `DomainError`), and `CommonKit` no longer points at `ProductDomain`.
+The product features reach product display models and copy through
+`ProductPresentation`, which depends on `ProductDomain` and `CommonKit`.
 
 ### Dependency rules
 
 | Rule | Enforced by |
 |---|---|
-| `ProductDomain` imports nothing | its empty `dependencies:` list |
+| `SharedDomain` imports nothing | its empty `dependencies:` list |
+| A domain imports only `SharedDomain`, never another domain | each domain's `dependencies:` list |
+| `CommonKit` depends on no feature domain | its `dependencies:` list is `SharedDomain` only |
 | No feature depends on `ProductRepositoryLive` | repository resolved by interface |
 | Nothing depends on a `*Live` target except the app's registration | `dependencies:` lists |
 | `ProductListVIPER` sees `ProductDetailInterface`, never an implementation | `dependencies:` list |

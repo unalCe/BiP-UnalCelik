@@ -1,27 +1,32 @@
+import CachingKit
 import Foundation
 import LoggingKit
 import NetworkingKit
 import PersistenceKit
 import ProductDomain
+import SharedDomain
 
 public final class ProductRepository: ProductRepositoryInterface {
     private let remote: ProductRemoteDataSource
     private let local: ProductLocalDataSource
-    private let logger: LoggerInterface
+    private let loader: CacheAsideLoader
     private let errorMapper: DomainErrorMapper
-    private let timeToLive: TimeInterval
+
+    // MARK: - Lifecycle
 
     init(
         remote: ProductRemoteDataSource,
         local: ProductLocalDataSource,
         logger: LoggerInterface,
-        timeToLive: TimeInterval
+        timeToLive: TimeInterval,
+        now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.remote = remote
         self.local = local
-        self.logger = logger
+        self.loader = CacheAsideLoader(
+            policy: FreshnessPolicy(maxAge: timeToLive), logger: logger, now: now
+        )
         self.errorMapper = DomainErrorMapper(logger: logger)
-        self.timeToLive = timeToLive
     }
 
     public convenience init(
@@ -32,63 +37,37 @@ public final class ProductRepository: ProductRepositoryInterface {
         timeToLive: TimeInterval
     ) {
         self.init(
-            remote: HTTPProductRemoteDataSource(client: client, baseURL: baseURL, logger: logger),
+            remote: HTTPProductRemoteDataSource(apiClient: APIClient(baseURL: baseURL, transport: client)),
             local: CoreDataProductStore(container: container),
             logger: logger,
             timeToLive: timeToLive
         )
     }
 
-    public func products() async throws -> [Product] {
-        if let cached = await cachedOrMiss({ try await local.products() }), isFresh(cached) {
-            return cached.value
-        }
+    // MARK: - Public Funcs
 
+    public func products() async throws -> [Product] {
         do {
-            let fresh = try await remote.products()
-            await cache { try await local.saveListPage(fresh, at: Date()) }
-            return fresh
+            return try await loader.load(
+                read: local.products,
+                fetch: remote.products,
+                write: local.saveListPage
+            )
         } catch {
             throw errorMapper.map(error)
         }
     }
 
     public func product(id: String) async throws -> Product {
-        if let cached = await cachedOrMiss({ try await local.detail(id: id) }), isFresh(cached) {
-            return cached.value
-        }
-
         do {
-            let fresh = try await remote.product(id: id)
-            await cache { try await local.saveDetail(fresh, at: Date()) }
-            return fresh
+            return try await loader.load(
+                read: { try await local.detail(id: id) },
+//                read: local.detail(id: id), // doesn't work here because loader expects () -> CacheEntry<Product>, not a (Sting)-> CacheEntry
+                fetch: { try await remote.product(id: id) },
+                write: local.saveDetail
+            )
         } catch {
             throw errorMapper.map(error)
         }
-    }
-
-    //
-
-    private func cachedOrMiss<Value>(
-        _ read: () async throws -> Cached<Value>?
-    ) async -> Cached<Value>? {
-        do {
-            return try await read()
-        } catch {
-            logger.error("cache read failed, treated as a miss: \(error)", category: .persistence)
-            return nil
-        }
-    }
-
-    private func cache(_ write: () async throws -> Void) async {
-        do {
-            try await write()
-        } catch {
-            logger.error("cache write failed, response returned uncached: \(error)", category: .persistence)
-        }
-    }
-
-    private func isFresh<Value>(_ cached: Cached<Value>) -> Bool {
-        Date().timeIntervalSince(cached.fetchedAt) < timeToLive
     }
 }

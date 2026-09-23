@@ -1,8 +1,7 @@
 import Foundation
 
-/// Every user-facing string, resolved from this module's catalog. Views take
-/// the resolved `String`: a SwiftUI literal would look its key up in the main
-/// bundle, where this catalog is not.
+/// Views take the resolved `String`: a SwiftUI literal would look its key up in
+/// the main bundle, where none of the catalogs are.
 public enum AppStrings {
     public enum Common {
         public static var tryAgain: String {
@@ -45,48 +44,6 @@ public enum AppStrings {
         public static var genericMessage: String {
             String(localized: "error.generic.message", bundle: .module,
                    comment: "Error message under the generic error title")
-        }
-    }
-
-    public enum ProductList {
-        public static var title: String {
-            String(localized: "productList.title", bundle: .module,
-                   comment: "Navigation title of the product list")
-        }
-
-        public static var emptyTitle: String {
-            String(localized: "productList.empty.title", bundle: .module,
-                   comment: "Shown instead of the list when the server returns no products")
-        }
-    }
-
-    public enum ProductDetail {
-        public static var descriptionUnavailable: String {
-            String(localized: "productDetail.descriptionUnavailable", bundle: .module,
-                   comment: "Shown in place of a product description the server did not send")
-        }
-
-        public static var emptyTitle: String {
-            String(localized: "productDetail.empty.title", bundle: .module,
-                   comment: "Shown instead of the detail screen when there is no product to show")
-        }
-    }
-
-    public enum FlowPicker {
-        public static var title: String {
-            String(localized: "flowPicker.title", bundle: .module,
-                   comment: "Navigation title of the screen that picks an architecture to open")
-        }
-
-        /// `flow` is a product name such as "MVVM-C · UIKit" and is not translated.
-        public static func open(_ flow: String) -> String {
-            String(localized: "flowPicker.open \(flow)", bundle: .module,
-                   comment: "Button that opens the chosen architecture. %@ is its name, e.g. MVVM-C · UIKit")
-        }
-
-        public static var viperLockReason: String {
-            String(localized: "flowPicker.viperLockReason", bundle: .module,
-                   comment: "Explains why the UIKit/SwiftUI choice is disabled while VIPER is selected")
         }
     }
 }
