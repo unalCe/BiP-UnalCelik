@@ -1,0 +1,10 @@
+{
+  "products" : [
+     { "product_id" : "1", "name" : "Apples", "price" : 120,
+       "image" : "https://s3-eu-west-1.amazonaws.com/developer-application-test/images/1.jpg" },
+     { "product_id" : "6_id_is_a_string", "name" : "Pork", "price" : 343,
+       "image" : "https://s3-eu-west-1.amazonaws.com/developer-application-test/images/6.jpg" },
+     { "product_id" : "12", "name" : "Peppers", "price" : 9,
+       "image" : "https://s3-eu-west-1.amazonaws.com/developer-application-test/images/12.jpg" }
+  ]
+}

@@ -13,6 +13,7 @@ let package = Package(
     products: [
         .library(name: "SharedDomain", targets: ["SharedDomain"]),
         .library(name: "ProductDomain", targets: ["ProductDomain"]),
+        .library(name: "ProductAPI", targets: ["ProductAPI"]),
         .library(name: "ProductRepositoryLive", targets: ["ProductRepositoryLive"]),
         .library(name: "ProductRepositoryMocks", targets: ["ProductRepositoryMocks"]),
 
@@ -50,11 +51,19 @@ let package = Package(
         ),
 
         // ── Data ─────────────────────────────────────────────────────────
+        // The wire format (DTOs + mapper) on its own, so the Live repository
+        // and the JSON fixtures in Mocks decode through the same code.
+        .target(
+            name: "ProductAPI",
+            dependencies: ["SharedDomain", "ProductDomain"],
+            path: "Sources/Data/ProductAPI"
+        ),
         .target(
             name: "ProductRepositoryLive",
             dependencies: [
                 "SharedDomain",
                 "ProductDomain",
+                "ProductAPI",
                 .product(name: "NetworkingKit", package: "CoreKit"),
                 .product(name: "PersistenceKit", package: "CoreKit"),
                 .product(name: "LoggingKit", package: "CoreKit"),
@@ -66,8 +75,9 @@ let package = Package(
         ),
         .target(
             name: "ProductRepositoryMocks",
-            dependencies: ["SharedDomain", "ProductDomain"],
-            path: "Sources/Data/ProductRepositoryMocks"
+            dependencies: ["SharedDomain", "ProductDomain", "ProductAPI"],
+            path: "Sources/Data/ProductRepositoryMocks",
+            resources: [.process("Resources")]
         ),
 
         // ── Shared ───────────────────────────────────────────────────────

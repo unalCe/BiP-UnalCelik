@@ -1,6 +1,7 @@
 import CachingKit
 import CoreData
 import Foundation
+import ProductAPI
 import PersistenceKit
 import ProductDomain
 

@@ -2,8 +2,8 @@ import Foundation
 import ProductDomain
 import SharedDomain
 
-enum ProductMapper {
-    static func map(_ dto: ProductDTO) -> Product {
+public enum ProductMapper {
+    public static func map(_ dto: ProductDTO) -> Product {
         Product(
             id: dto.productId,
             name: dto.name,
@@ -13,5 +13,5 @@ enum ProductMapper {
         )
     }
 
-    static func map(_ dtos: [ProductDTO]) -> [Product] { dtos.map(map) }
+    public static func map(_ dtos: [ProductDTO]) -> [Product] { dtos.map(map) }
 }

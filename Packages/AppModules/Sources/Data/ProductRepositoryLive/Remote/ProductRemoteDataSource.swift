@@ -1,5 +1,6 @@
 import Foundation
 import NetworkingKit
+import ProductAPI
 import ProductDomain
 
 protocol ProductRemoteDataSource: Sendable {
