@@ -44,4 +44,10 @@ final class FlowSelectionTests: XCTestCase {
     func test_initRejectsIllegalCombination() {
         XCTAssertEqual(FlowSelection(architecture: .viper, uiFramework: .swiftUI).uiFramework, .uiKit)
     }
+
+    func test_initFromStyle_roundTrips() {
+        for style in FlowStyle.allCases {
+            XCTAssertEqual(FlowSelection(style: style).style, style)
+        }
+    }
 }

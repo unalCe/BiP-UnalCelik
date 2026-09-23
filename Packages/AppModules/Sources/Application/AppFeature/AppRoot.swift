@@ -1,4 +1,6 @@
 import DependencyEngine
+import LoggingKit
+import LoggingKitLive
 import SwiftUI
 import UIKit
 
@@ -7,11 +9,16 @@ public enum AppRoot {
     /// Call once at launch, before `makeRootViewController`.
     public static func bootstrap(engine: DependencyEngine = .shared) {
         AppDependencyRegistration.register(to: engine)
-        FlowRegistration.register(.mvvmUIKit, to: engine)
     }
 
-    public static func makeRootViewController(engine: DependencyEngine = .shared) -> UIViewController {
-        UINavigationController(rootViewController: FlowPickerViewController(engine: engine))
+    public static func makeRootViewController(
+        engine: DependencyEngine = .shared,
+        style: FlowStyle = .mvvmUIKit
+    ) -> UIViewController {
+        let logger: LoggerInterface = engine.resolve(LoggerInterface.self) ?? OSLogger()
+        return AppShellViewController(style: style,
+                                      engine: engine,
+                                      logger: logger)
     }
 }
 
