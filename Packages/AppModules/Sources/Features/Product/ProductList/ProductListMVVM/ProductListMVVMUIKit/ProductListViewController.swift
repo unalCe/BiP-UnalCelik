@@ -1,3 +1,5 @@
+import AccessibilityIdentifiers
+import AccessibilityKit
 import Combine
 import CommonKit
 import CommonUI
@@ -66,6 +68,7 @@ public final class ProductListViewController: UIViewController {
         self.cellRegistration = UICollectionView.CellRegistration { cell, _, item in
             cell.configure(with: item,
                            imageLoader: imageLoader)
+            cell.setAccessibilityIdentifier(UIElements.ProductList.cell, suffix: item.id)
         }
         super.init(nibName: nil, bundle: nil)
         title = AppStrings.ProductList.title
@@ -78,11 +81,17 @@ public final class ProductListViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         setUpHierarchy()
+        setAccessibilityIdentifiers()
         bind()
         viewModel.onAppear()
     }
 
     // MARK: - Private Funcs
+
+    private func setAccessibilityIdentifiers() {
+        collectionView.setAccessibilityIdentifier(UIElements.ProductList.collection)
+        skeletonView.setAccessibilityIdentifier(UIElements.ProductList.skeleton)
+    }
 
     private func setUpHierarchy() {
         view.addSubview(collectionView, pinnedToEdges: .zero)

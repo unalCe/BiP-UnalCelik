@@ -20,6 +20,7 @@ let package = Package(
 
         .library(name: "CommonKit", targets: ["CommonKit"]),
         .library(name: "CommonUI", targets: ["CommonUI"]),
+        .library(name: "AccessibilityIdentifiers", targets: ["AccessibilityIdentifiers"]),
         .library(name: "ProductPresentation", targets: ["ProductPresentation"]),
 
         .library(name: "ProductListInterface", targets: ["ProductListInterface"]),
@@ -35,6 +36,7 @@ let package = Package(
         .library(name: "ProductDetailVIPER", targets: ["ProductDetailVIPER"]),
 
         .library(name: "AppFeature", targets: ["AppFeature"]),
+        .library(name: "UITestSupport", targets: ["UITestSupport"]),
     ],
     dependencies: [
         .package(path: "../CoreKit"),
@@ -93,12 +95,19 @@ let package = Package(
             path: "Sources/Shared/CommonKit",
             resources: [.process("Resources/Localizable.xcstrings")]
         ),
+        // Identifiers the views set and the UI tests look up; linked by both.
+        .target(
+            name: "AccessibilityIdentifiers",
+            dependencies: [.product(name: "AccessibilityKit", package: "CoreKit")],
+            path: "Sources/Shared/AccessibilityIdentifiers"
+        ),
         .target(
             name: "CommonUI",
             dependencies: [
                 .product(name: "LayoutKit", package: "CoreKit"),
                 "CommonKit",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
+                "AccessibilityIdentifiers", .product(name: "AccessibilityKit", package: "CoreKit"),
             ],
             path: "Sources/Shared/CommonUI"
         ),
@@ -124,6 +133,7 @@ let package = Package(
         .target(
             name: "ProductListMVVMUIKit",
             dependencies: [
+                "AccessibilityIdentifiers", .product(name: "AccessibilityKit", package: "CoreKit"),
                 "ProductPresentation",
                 "ProductListMVVM", "ProductListInterface", "ProductDomain", "CommonKit", "CommonUI",
                 .product(name: "LayoutKit", package: "CoreKit"),
@@ -134,6 +144,7 @@ let package = Package(
         .target(
             name: "ProductListMVVMSwiftUI",
             dependencies: [
+                "AccessibilityIdentifiers", .product(name: "AccessibilityKit", package: "CoreKit"),
                 "ProductPresentation",
                 "ProductListMVVM", "ProductListInterface", "ProductDomain", "CommonKit", "CommonUI",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
@@ -143,6 +154,7 @@ let package = Package(
         .target(
             name: "ProductListVIPER",
             dependencies: [
+                "AccessibilityIdentifiers", .product(name: "AccessibilityKit", package: "CoreKit"),
                 "ProductPresentation",
                 .product(name: "LayoutKit", package: "CoreKit"),
                 "ProductDomain", "CommonKit", "CommonUI",
@@ -168,6 +180,7 @@ let package = Package(
         .target(
             name: "ProductDetailMVVMUIKit",
             dependencies: [
+                "AccessibilityIdentifiers", .product(name: "AccessibilityKit", package: "CoreKit"),
                 "ProductPresentation",
                 .product(name: "LayoutKit", package: "CoreKit"),
                 .product(name: "ImageCacheKit", package: "CoreKit"),
@@ -178,6 +191,7 @@ let package = Package(
         .target(
             name: "ProductDetailMVVMSwiftUI",
             dependencies: [
+                "AccessibilityIdentifiers", .product(name: "AccessibilityKit", package: "CoreKit"),
                 "ProductPresentation",
                 "ProductDetailMVVM", "ProductDetailInterface", "ProductDomain", "CommonKit", "CommonUI",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
@@ -187,6 +201,7 @@ let package = Package(
         .target(
             name: "ProductDetailVIPER",
             dependencies: [
+                "AccessibilityIdentifiers", .product(name: "AccessibilityKit", package: "CoreKit"),
                 "ProductPresentation",
                 .product(name: "LayoutKit", package: "CoreKit"),
                 .product(name: "ImageCacheKit", package: "CoreKit"),
@@ -197,10 +212,21 @@ let package = Package(
             path: "Sources/Features/Product/ProductDetail/ProductDetailVIPER"
         ),
 
+        // ── UI testing ───────────────────────────────────────────────────
+        // The launch contract: the UI test encodes a configuration, the app
+        // decodes it and answers every request from it. Linked by both.
+        .target(
+            name: "UITestSupport",
+            dependencies: [.product(name: "NetworkingKit", package: "CoreKit")],
+            path: "Sources/Application/UITestSupport"
+        ),
+
         // ── Composition root ─────────────────────────────────────────────
         .target(
             name: "AppFeature",
             dependencies: [
+                "UITestSupport", .product(name: "NetworkingKit", package: "CoreKit"),
+                "AccessibilityIdentifiers", .product(name: "AccessibilityKit", package: "CoreKit"),
                 .product(name: "LayoutKit", package: "CoreKit"),
                 "ProductDomain", "ProductRepositoryLive", "CommonKit", "CommonUI",
                 "ProductListInterface", "ProductListMVVMUIKit",
@@ -302,6 +328,15 @@ let package = Package(
                 .product(name: "TestSupport", package: "CoreKit"),
             ],
             path: "Tests/Features/Product/ProductDetail/ProductDetailVIPERTests"
+        ),
+        .testTarget(
+            name: "UITestSupportTests",
+            dependencies: [
+                "UITestSupport",
+                .product(name: "NetworkingKit", package: "CoreKit"),
+                .product(name: "TestSupport", package: "CoreKit"),
+            ],
+            path: "Tests/Application/UITestSupportTests"
         ),
         .testTarget(
             name: "AppFeatureTests",

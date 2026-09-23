@@ -1,3 +1,5 @@
+import AccessibilityIdentifiers
+import AccessibilityKit
 import CommonKit
 import LayoutKit
 import UIKit
@@ -20,6 +22,7 @@ public final class StateContainerView: UIView {
         let label = UILabel()
         label.numberOfLines = 0
         label.textAlignment = .center
+        label.setAccessibilityIdentifier(UIElements.StateView.message)
         return label
     }()
 
@@ -28,6 +31,7 @@ public final class StateContainerView: UIView {
         let button = UIButton(type: .system)
         button.setTitle(AppStrings.Common.tryAgain, for: .normal)
         button.addTarget(self, action: #selector(retryTapped), for: .touchUpInside)
+        button.setAccessibilityIdentifier(UIElements.StateView.retryButton)
         return button
     }()
 
@@ -45,6 +49,7 @@ public final class StateContainerView: UIView {
 
     public override init(frame: CGRect) {
         super.init(frame: frame)
+        setAccessibilityIdentifier(UIElements.StateView.container)
         setUpHierarchy()
     }
 

@@ -1,3 +1,5 @@
+import AccessibilityIdentifiers
+import AccessibilityKit
 import CommonKit
 import SwiftUI
 
@@ -15,7 +17,9 @@ public struct ErrorStateView: View {
         VStack(spacing: StateLayout.spacing) {
             Text(error.title).font(.headline)
             Text(error.message).font(.subheadline).foregroundStyle(.secondary)
+                .accessibilityIdentifier(UIElements.StateView.message)
             Button(AppStrings.Common.tryAgain, action: retry)
+                .accessibilityIdentifier(UIElements.StateView.retryButton)
         }
         .multilineTextAlignment(.center)
         .padding(.horizontal, StateLayout.minimumHorizontalInset)

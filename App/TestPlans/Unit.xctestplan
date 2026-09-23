@@ -156,6 +156,14 @@
         "identifier" : "AppFeatureTests",
         "name" : "AppFeatureTests"
       }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "UITestSupportTests",
+        "name" : "UITestSupportTests"
+      }
     }
   ],
   "version" : 1

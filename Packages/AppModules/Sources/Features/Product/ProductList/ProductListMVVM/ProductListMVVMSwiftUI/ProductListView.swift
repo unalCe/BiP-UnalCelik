@@ -1,3 +1,5 @@
+import AccessibilityIdentifiers
+import AccessibilityKit
 import CommonKit
 import CommonUI
 import ImageCacheKit
@@ -29,6 +31,7 @@ public struct ProductListView: View {
         switch viewModel.state {
         case .idle, .loading:
             ScrollView { ProductGridSkeleton() }
+                .accessibilityIdentifier(UIElements.ProductList.skeleton)
         case .loaded(let items):
             ScrollView {
                 ProductGrid {
@@ -39,11 +42,14 @@ public struct ProductListView: View {
                             ProductCell(item: item, imageLoader: imageLoader)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier(UIElements.ProductList.cell, suffix: item.id)
                     }
                 }
             }
+            .accessibilityIdentifier(UIElements.ProductList.collection)
         case .empty:
             ContentUnavailableView(AppStrings.ProductList.emptyTitle, systemImage: "tray")
+                .accessibilityIdentifier(UIElements.StateView.container)
         case .failed(let error):
             ErrorStateView(error: error) { viewModel.retry() }
         }

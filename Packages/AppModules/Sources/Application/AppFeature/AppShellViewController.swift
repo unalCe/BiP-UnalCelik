@@ -1,3 +1,5 @@
+import AccessibilityIdentifiers
+import AccessibilityKit
 import CommonKit
 import DependencyEngine
 import LayoutKit
@@ -75,6 +77,7 @@ final class AppShellViewController: UIViewController {
             action: #selector(showFlowPicker)
         )
         button.accessibilityLabel = AppStrings.FlowPicker.infoButton
+        button.setAccessibilityIdentifier(UIElements.Shell.flowPickerButton)
         return button
     }
 

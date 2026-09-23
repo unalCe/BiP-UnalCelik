@@ -1,3 +1,5 @@
+import AccessibilityIdentifiers
+import AccessibilityKit
 import CommonKit
 import CommonUI
 import ImageCacheKit
@@ -91,10 +93,19 @@ public final class ProductDetailViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         setUpHierarchy()
+        setAccessibilityIdentifiers()
         presenter?.viewDidLoad()
     }
 
     // MARK: - Private Funcs
+
+    private func setAccessibilityIdentifiers() {
+        scrollView.setAccessibilityIdentifier(UIElements.ProductDetail.scrollView)
+        productImageView.setAccessibilityIdentifier(UIElements.ProductDetail.image)
+        titleLabel.setAccessibilityIdentifier(UIElements.ProductDetail.title)
+        priceLabel.setAccessibilityIdentifier(UIElements.ProductDetail.price)
+        descriptionLabel.setAccessibilityIdentifier(UIElements.ProductDetail.description)
+    }
 
     private func setUpHierarchy() {
         view.addSubview(scrollView, pinnedToEdges: .zero)

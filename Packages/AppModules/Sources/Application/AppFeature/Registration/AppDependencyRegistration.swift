@@ -2,6 +2,7 @@ import DependencyEngine
 import ImageCacheKitLive
 import LoggingKit
 import LoggingKitLive
+import NetworkingKit
 import NetworkingKitLive
 import PersistenceKit
 import PersistenceKitLive
@@ -13,13 +14,20 @@ public enum AppDependencyRegistration {
         to engine: DependencyEngine,
         inMemory: Bool = false,
         logger: LoggerInterface = OSLogger(),
-        configuration: AppConfiguration = .default
+        configuration: AppConfiguration = .default,
+        httpClient: HTTPClientInterface? = nil
     ) {
         engine.register(value: logger, for: LoggerInterface.self)
 
         let registrations: [(DependencyEngine) -> Void] = [
             { NetworkingKitDependencyRegistration.register(to: $0,
                                                            cache: configuration.urlCache) },
+            // replaces the URLSession client before anything resolves it,
+            // so the repository and the image loader both go through it
+            { engine in
+                guard let httpClient else { return }
+                engine.register(value: httpClient, for: HTTPClientInterface.self)
+            },
             { registerPersistentContainer(to: $0,
                                           inMemory: inMemory,
                                           logger: logger) },

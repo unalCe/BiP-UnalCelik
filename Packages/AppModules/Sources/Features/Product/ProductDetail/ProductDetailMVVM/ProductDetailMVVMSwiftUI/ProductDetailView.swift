@@ -1,3 +1,5 @@
+import AccessibilityIdentifiers
+import AccessibilityKit
 import CommonKit
 import CommonUI
 import ImageCacheKit
@@ -49,31 +51,39 @@ public struct ProductDetailView: View {
                     Color.clear
                         .aspectRatio(Metrics.imageAspectRatio, contentMode: .fit)
                         .overlay { CachedImage(url: item.imageURL, loader: imageLoader) }
+                        .accessibilityIdentifier(UIElements.ProductDetail.image)
 
                     VStack(alignment: .leading, spacing: Metrics.textSpacing) {
                         HStack(alignment: .firstTextBaseline, spacing: Metrics.textSpacing) {
                             Text(item.title).font(.system(size: titleFontSize, weight: .semibold))
+                                .accessibilityIdentifier(UIElements.ProductDetail.title)
                             Spacer(minLength: 0)
                             Text(item.formattedPrice)
                                 .font(.headline)
                                 .foregroundStyle(.secondary)
                                 .layoutPriority(1)
+                                .accessibilityIdentifier(UIElements.ProductDetail.price)
                         }
-                        if let description = item.description {
-                            Text(description).font(.body)
-                        } else {
-                            Text(AppStrings.ProductDetail.descriptionUnavailable)
-                                .font(.body.italic())
-                                .foregroundStyle(.secondary)
+                        Group {
+                            if let description = item.description {
+                                Text(description).font(.body)
+                            } else {
+                                Text(AppStrings.ProductDetail.descriptionUnavailable)
+                                    .font(.body.italic())
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        .accessibilityIdentifier(UIElements.ProductDetail.description)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Metrics.horizontalInset)
                     .padding(.bottom, Metrics.bottomInset)
                 }
             }
+            .accessibilityIdentifier(UIElements.ProductDetail.scrollView)
         case .empty:
             ContentUnavailableView(AppStrings.ProductDetail.emptyTitle, systemImage: "tray")
+                .accessibilityIdentifier(UIElements.StateView.container)
         case .failed(let error):
             ErrorStateView(error: error) { viewModel.retry() }
         }

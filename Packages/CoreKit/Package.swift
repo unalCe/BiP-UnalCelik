@@ -17,6 +17,7 @@ let package = Package(
     products: [
         .library(name: "DependencyEngine", targets: ["DependencyEngine"]),
         .library(name: "LayoutKit", targets: ["LayoutKit"]),
+        .library(name: "AccessibilityKit", targets: ["AccessibilityKit"]),
 
         .library(name: "LoggingKit", targets: ["LoggingKit"]),
         .library(name: "LoggingKitLive", targets: ["LoggingKitLive"]),
@@ -41,6 +42,13 @@ let package = Package(
         .target(
             name: "DependencyEngine",
             path: "Sources/DependencyInjection/DependencyEngine"
+        ),
+
+        // ── Accessibility ────────────────────────────────────────────────
+        // Linked by the app (to tag views) and by UI tests (to find them).
+        .target(
+            name: "AccessibilityKit",
+            path: "Sources/Accessibility/AccessibilityKit"
         ),
 
         // ── Layout ───────────────────────────────────────────────────────
