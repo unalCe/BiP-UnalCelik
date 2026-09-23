@@ -3,6 +3,13 @@ import Foundation
 import ProductPresentation
 
 @MainActor
+public protocol ProductListPresenterInterface: AnyObject {
+    func viewDidLoad()
+    func didSelectItem(id: String)
+    func didTapRetry()
+}
+
+@MainActor
 public final class ProductListPresenter: ProductListPresenterInterface {
     public weak var view: ProductListViewInterface?
 
