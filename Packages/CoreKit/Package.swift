@@ -62,7 +62,7 @@ let package = Package(
         .target(
             name: "LoggingKitMocks",
             dependencies: ["LoggingKit"],
-            path: "Sources/Logging/LoggingKitMocks"
+            path: "Tests/Logging/LoggingKitMocks"
         ),
 
         // ── Caching ──────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ let package = Package(
         .target(
             name: "NetworkingKitMocks",
             dependencies: ["NetworkingKit"],
-            path: "Sources/Networking/NetworkingKitMocks"
+            path: "Tests/Networking/NetworkingKitMocks"
         ),
 
         // ── Persistence ──────────────────────────────────────────────────
@@ -112,13 +112,13 @@ let package = Package(
         .target(
             name: "ImageCacheKitMocks",
             dependencies: ["ImageCacheKit"],
-            path: "Sources/ImageLoading/ImageCacheKitMocks"
+            path: "Tests/ImageLoading/ImageCacheKitMocks"
         ),
 
         // ── Testing ──────────────────────────────────────────────────────
         .target(
             name: "TestSupport",
-            path: "Sources/Testing/TestSupport"
+            path: "Tests/Testing/TestSupport"
         ),
 
         // ── Tests ────────────────────────────────────────────────────────

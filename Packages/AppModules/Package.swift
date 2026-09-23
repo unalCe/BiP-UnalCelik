@@ -53,7 +53,7 @@ let package = Package(
         .target(
             name: "ProductDomainMocks",
             dependencies: ["ProductDomain"],
-            path: "Sources/Domain/ProductDomainMocks"
+            path: "Tests/Domain/ProductDomainMocks"
         ),
 
         // ── Data ─────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ let package = Package(
         .target(
             name: "ProductRepositoryMocks",
             dependencies: ["SharedDomain", "ProductDomain", "ProductAPI"],
-            path: "Sources/Data/ProductRepositoryMocks",
+            path: "Tests/Data/ProductRepositoryMocks",
             resources: [.process("Resources")]
         ),
 

@@ -561,8 +561,8 @@ territory, planned separately.
 | One `*Tests` target per module, beside it | fast, focused builds; ownership is obvious |
 | Stored subject + collaborators, built in `setUp()` → `reCreate(...)`, released in `tearDown()` | no test rebuilds the same graph by hand; variants call `reCreate` with arguments. XCTest keeps every test-case instance alive for the whole run, so `tearDown` must nil everything |
 | Mocks use `invokedX` / `invokedXCount` / `invokedXParameters(List)` / `stubbedX` | tests read as assert-before, act, assert-after |
-| A mock used by one target lives in its `Mocks/` folder; shared ones in a `*Mocks` module | `ProductDomainMocks` (use cases), `ProductRepositoryMocks` (repository + fixtures), `NetworkingKitMocks`, `ImageCacheKitMocks`, `LoggingKitMocks` |
-| Product data comes from captured API responses | `ProductFixture` decodes `ProductRepositoryMocks/Resources/*.json` through the real `ProductAPI` DTOs and mapper, so fixtures cannot drift from the wire format |
+| A mock used by one target lives in its `Mocks/` folder; shared ones in a `*Mocks` module under `Tests/` | `ProductDomainMocks` (use cases), `ProductRepositoryMocks` (repository + fixtures), `NetworkingKitMocks`, `ImageCacheKitMocks`, `LoggingKitMocks`, and `TestSupport`. They are regular targets — a test target cannot depend on another test target — but their sources sit beside the tests, so `Sources/` holds only what ships |
+| Product data comes from captured API responses | `ProductFixture` decodes `Tests/Data/ProductRepositoryMocks/Resources/*.json` through the real `ProductAPI` DTOs and mapper, so fixtures cannot drift from the wire format |
 | Time is never the synchronisation mechanism | view models and presenters expose `loadTask` internally; tests `await loadTask?.value`. Held-open work uses `AsyncGate`; freshness moves a test clock |
 | `TestSupport` is the only target that imports XCTest | `XCTAssertThrowsErrorAsync`, `XCTAssertLocalized`, `AsyncGate`. `*Mocks` stay XCTest-free so UI-test launch scenarios can reuse them |
 
