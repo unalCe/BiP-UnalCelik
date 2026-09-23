@@ -7,6 +7,8 @@ import UIKit
 public final class ShimmerSweep {
     private enum Key { static let sweep = "shimmer.sweep" }
 
+    // MARK: - Subviews
+
     private let container = CALayer()
     private let mask = CAShapeLayer()
     private let gradient: CAGradientLayer = {
@@ -21,10 +23,14 @@ public final class ShimmerSweep {
         return layer
     }()
 
+    // MARK: - Lifecycle
+
     public init() {
         container.mask = mask
         container.addSublayer(gradient)
     }
+
+    // MARK: - Public Funcs
 
     public func attach(to host: CALayer) {
         host.addSublayer(container)

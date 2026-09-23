@@ -8,6 +8,8 @@ public final class ImageLoader: ImageLoaderInterface, Sendable {
     private let downsampler: ImageDownsampling
     private let registry = InFlightRegistry()
 
+    // MARK: - Lifecycle
+
     init(
         client: HTTPClientInterface,
         cache: DecodedImageCaching,
@@ -28,6 +30,8 @@ public final class ImageLoader: ImageLoaderInterface, Sendable {
             downsampler: CGImageDownsampler()
         )
     }
+
+    // MARK: - Public Funcs
 
     public func image(for request: ImageRequest) async throws -> UIImage {
         if let cached = cache.image(for: request) { return cached }

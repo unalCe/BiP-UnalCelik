@@ -6,9 +6,20 @@ public final class ImagePrefetcher: ImagePrefetchingInterface, @unchecked Sendab
     private let lock = NSLock()
     private var tasks: [ImageRequest: (token: UUID, task: Task<Void, Never>)] = [:]
 
+    // MARK: - Lifecycle
+
     public init(loader: ImageLoaderInterface) {
         self.loader = loader
     }
+
+    deinit {
+        lock.withLock {
+            tasks.values.forEach { $0.task.cancel() }
+            tasks.removeAll()
+        }
+    }
+
+    // MARK: - Public Funcs
 
     public func prefetch(_ requests: [ImageRequest]) {
         for request in Set(requests) { start(request) }
@@ -21,6 +32,8 @@ public final class ImagePrefetcher: ImagePrefetchingInterface, @unchecked Sendab
         }
         cancelled.forEach { $0.cancel() }
     }
+
+    // MARK: - Private Funcs
 
     private func start(_ request: ImageRequest) {
         let token = UUID()
@@ -41,10 +54,4 @@ public final class ImagePrefetcher: ImagePrefetchingInterface, @unchecked Sendab
         }
     }
 
-    deinit {
-        lock.withLock {
-            tasks.values.forEach { $0.task.cancel() }
-            tasks.removeAll()
-        }
-    }
 }

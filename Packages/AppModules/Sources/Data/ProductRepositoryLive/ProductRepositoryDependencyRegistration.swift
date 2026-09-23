@@ -9,7 +9,9 @@ import ProductDomain
 // stays current are the composition root's decisions, so they arrive as
 // arguments.
 public enum ProductRepositoryDependencyRegistration {
-    public static func register(to engine: DependencyEngine, baseURL: URL, timeToLive: TimeInterval) {
+    public static func register(to engine: DependencyEngine,
+                                baseURL: URL,
+                                timeToLive: TimeInterval) {
         guard
             let client: HTTPClientInterface = engine.resolve(HTTPClientInterface.self),
             let container: PersistentContainerInterface = engine.resolve(PersistentContainerInterface.self),
@@ -20,7 +22,11 @@ public enum ProductRepositoryDependencyRegistration {
 
         engine.register(
             value: ProductRepository(
-                client: client, container: container, baseURL: baseURL, logger: logger, timeToLive: timeToLive
+                client: client,
+                container: container,
+                baseURL: baseURL,
+                logger: logger,
+                timeToLive: timeToLive
             ) as ProductRepositoryInterface,
             for: ProductRepositoryInterface.self
         )

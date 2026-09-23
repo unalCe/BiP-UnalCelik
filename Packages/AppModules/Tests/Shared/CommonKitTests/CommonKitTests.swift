@@ -1,4 +1,4 @@
-import ProductDomain
+import SharedDomain
 import XCTest
 @testable import CommonKit
 
@@ -35,33 +35,13 @@ final class ErrorPresenterTests: XCTestCase {
     }
 }
 
-final class ProductDisplayMapperTests: XCTestCase {
-    func test_carriesDescriptionThrough() {
-        let product = Product(
-            id: "1", name: "Apples", price: Money(minorUnits: 120),
-            imageURL: nil, productDescription: "An apple a day."
-        )
-
-        let display = ProductDisplayMapper().map(product)
-
-        XCTAssertEqual(display.id, "1")
-        XCTAssertEqual(display.title, "Apples")
-        XCTAssertEqual(display.description, "An apple a day.")
-    }
-}
-
 /// An unresolved key comes back as the key itself, so these fail if the catalog
 /// is missing from the module's bundle rather than quietly showing
 /// `common.tryAgain` on screen.
 final class AppStringsTests: XCTestCase {
     func test_resolvesFromTheCatalog() {
         XCTAssertEqual(AppStrings.Common.tryAgain, "Try again")
-        XCTAssertEqual(AppStrings.ProductList.emptyTitle, "No products available")
-        XCTAssertEqual(AppStrings.ProductDetail.descriptionUnavailable, "Description unavailable.")
-    }
-
-    func test_formatsTheInterpolatedFlowName() {
-        XCTAssertEqual(AppStrings.FlowPicker.open("VIPER · UIKit"), "Open VIPER · UIKit")
+        XCTAssertEqual(AppStrings.Error.offlineTitle, "You're offline")
     }
 
     func test_noStringFallsBackToItsKey() {
@@ -70,10 +50,6 @@ final class AppStringsTests: XCTestCase {
             AppStrings.Error.offlineTitle, AppStrings.Error.offlineMessage,
             AppStrings.Error.invalidDataTitle, AppStrings.Error.invalidDataMessage,
             AppStrings.Error.genericTitle, AppStrings.Error.genericMessage,
-            AppStrings.ProductList.title, AppStrings.ProductList.emptyTitle,
-            AppStrings.ProductDetail.descriptionUnavailable, AppStrings.ProductDetail.emptyTitle,
-            AppStrings.FlowPicker.title, AppStrings.FlowPicker.open("MVVM-C · UIKit"),
-            AppStrings.FlowPicker.viperLockReason,
         ]
         for string in all {
             XCTAssertNil(

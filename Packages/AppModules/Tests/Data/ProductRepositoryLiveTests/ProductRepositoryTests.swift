@@ -1,7 +1,9 @@
+import CachingKit
 import LoggingKitMocks
 import NetworkingKit
 import NetworkingKitMocks
 import ProductDomain
+import SharedDomain
 import XCTest
 @testable import ProductRepositoryLive
 
@@ -77,7 +79,7 @@ final class ProductRepositoryTests: XCTestCase {
 
         let expired = ProductRepository(
             remote: HTTPProductRemoteDataSource(
-                client: MockHTTPClient(always: .offline), baseURL: baseURL, logger: SpyLogger()
+                apiClient: APIClient(baseURL: baseURL, transport: MockHTTPClient(always: .offline))
             ),
             local: CoreDataProductStore(container: container),
             logger: SpyLogger(),
@@ -198,7 +200,9 @@ final class ProductRepositoryTests: XCTestCase {
         let logger = SpyLogger()
         let client = MockHTTPClient(always: .ok(HTTPFixtures.productList))
         let sut = ProductRepository(
-            remote: HTTPProductRemoteDataSource(client: client, baseURL: baseURL, logger: logger),
+            remote: HTTPProductRemoteDataSource(
+                apiClient: APIClient(baseURL: baseURL, transport: client)
+            ),
             local: BrokenStore(),
             logger: logger,
             timeToLive: tenMinutes
@@ -218,8 +222,9 @@ final class ProductRepositoryTests: XCTestCase {
         let logger = SpyLogger()
         let sut = ProductRepository(
             remote: HTTPProductRemoteDataSource(
-                client: MockHTTPClient(always: .ok(HTTPFixtures.productDetail)),
-                baseURL: baseURL, logger: logger
+                apiClient: APIClient(
+                    baseURL: baseURL, transport: MockHTTPClient(always: .ok(HTTPFixtures.productDetail))
+                )
             ),
             local: BrokenStore(),
             logger: logger,
@@ -252,8 +257,8 @@ final class ProductRepositoryTests: XCTestCase {
 private struct BrokenStore: ProductLocalDataSource {
     struct Failure: Error {}
 
-    func products() async throws -> Cached<[Product]>? { throw Failure() }
-    func detail(id: String) async throws -> Cached<Product>? { throw Failure() }
+    func products() async throws -> CacheEntry<[Product]>? { throw Failure() }
+    func detail(id: String) async throws -> CacheEntry<Product>? { throw Failure() }
     func saveListPage(_ products: [Product], at date: Date) async throws { throw Failure() }
     func saveDetail(_ product: Product, at date: Date) async throws { throw Failure() }
 }

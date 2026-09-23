@@ -1,3 +1,4 @@
+import SharedDomain
 import XCTest
 @testable import ProductDomain
 

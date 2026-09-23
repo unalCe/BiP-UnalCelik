@@ -18,6 +18,8 @@ let package = Package(
         .library(name: "LoggingKitLive", targets: ["LoggingKitLive"]),
         .library(name: "LoggingKitMocks", targets: ["LoggingKitMocks"]),
 
+        .library(name: "CachingKit", targets: ["CachingKit"]),
+
         .library(name: "NetworkingKit", targets: ["NetworkingKit"]),
         .library(name: "NetworkingKitLive", targets: ["NetworkingKitLive"]),
         .library(name: "NetworkingKitMocks", targets: ["NetworkingKitMocks"]),
@@ -55,6 +57,13 @@ let package = Package(
             name: "LoggingKitMocks",
             dependencies: ["LoggingKit"],
             path: "Sources/Logging/LoggingKitMocks"
+        ),
+
+        // ── Caching ──────────────────────────────────────────────────────
+        .target(
+            name: "CachingKit",
+            dependencies: ["LoggingKit"],
+            path: "Sources/Caching/CachingKit"
         ),
 
         // ── Networking ───────────────────────────────────────────────────
@@ -102,6 +111,11 @@ let package = Package(
 
         // ── Tests ────────────────────────────────────────────────────────
         .testTarget(
+            name: "CachingKitTests",
+            dependencies: ["CachingKit", "LoggingKitMocks"],
+            path: "Tests/Caching/CachingKitTests"
+        ),
+        .testTarget(
             name: "DependencyEngineTests",
             dependencies: ["DependencyEngine"],
             path: "Tests/DependencyInjection/DependencyEngineTests"
@@ -110,6 +124,11 @@ let package = Package(
             name: "LayoutKitTests",
             dependencies: ["LayoutKit"],
             path: "Tests/Layout/LayoutKitTests"
+        ),
+        .testTarget(
+            name: "NetworkingKitTests",
+            dependencies: ["NetworkingKit", "NetworkingKitMocks"],
+            path: "Tests/Networking/NetworkingKitTests"
         ),
         .testTarget(
             name: "NetworkingKitLiveTests",

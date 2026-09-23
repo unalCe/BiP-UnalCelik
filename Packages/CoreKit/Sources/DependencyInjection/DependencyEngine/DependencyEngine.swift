@@ -8,9 +8,13 @@ public final class DependencyEngine: @unchecked Sendable {
     private var factories: [ObjectIdentifier: () -> Any] = [:]
     private var instances: [ObjectIdentifier: Any] = [:]
 
+    // MARK: - Lifecycle
+
     public init() {}
 
     /// Lazily built on first resolve, then shared.
+    // MARK: - Public Funcs
+
     public func register(value: @autoclosure @escaping () -> Any, for interface: Any.Type) {
         lock.lock()
         defer { lock.unlock() }

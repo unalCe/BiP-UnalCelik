@@ -1,0 +1,54 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "productDetail.descriptionUnavailable" : {
+      "comment" : "Shown in place of a product description the server did not send",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Description unavailable."
+          }
+        }
+      }
+    },
+    "productDetail.empty.title" : {
+      "comment" : "Shown instead of the detail screen when there is no product to show",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not available"
+          }
+        }
+      }
+    },
+    "productList.empty.title" : {
+      "comment" : "Shown instead of the list when the server returns no products",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No products available"
+          }
+        }
+      }
+    },
+    "productList.title" : {
+      "comment" : "Navigation title of the product list",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Products"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

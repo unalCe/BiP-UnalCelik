@@ -3,6 +3,7 @@ import NetworkingKit
 import NetworkingKitMocks
 import PersistenceKit
 import ProductDomain
+import SharedDomain
 import XCTest
 @testable import ProductRepositoryLive
 
@@ -32,6 +33,13 @@ final class DomainErrorMapperTests: XCTestCase {
     func test_noConnection_mapsToOffline() {
         let underlying = NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)
         XCTAssertEqual(sut.map(NetworkError.transport(underlying)), .offline)
+    }
+
+    func test_decodingFailure_mapsToInvalidData_andIsLogged() {
+        struct Mismatch: Error {}
+
+        XCTAssertEqual(sut.map(NetworkError.decoding(Mismatch())), .invalidData)
+        XCTAssertEqual(logger.errors.map(\.category), [.networking])
     }
 
     func test_domainError_passesThroughUnchanged() {

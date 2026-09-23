@@ -12,6 +12,10 @@ enum StateLayout {
 // TODO: real layout
 @MainActor
 public final class StateContainerView: UIView {
+    public var onRetry: (() -> Void)?
+
+    // MARK: - Subviews
+
     private let label: UILabel = {
         let label = UILabel()
         label.numberOfLines = 0
@@ -37,7 +41,7 @@ public final class StateContainerView: UIView {
         return stack
     }()
 
-    public var onRetry: (() -> Void)?
+    // MARK: - Lifecycle
 
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -47,10 +51,7 @@ public final class StateContainerView: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    private func setUpHierarchy() {
-        addSubview(stack, centeredIn: nil)
-        stack.layout.leading(to: leadingAnchor, constant: StateLayout.minimumHorizontalInset, relation: .greaterThanOrEqual)
-    }
+    // MARK: - Public Funcs
 
     public func showLoading() {
         isHidden = false
@@ -70,6 +71,13 @@ public final class StateContainerView: UIView {
     public func hide() {
         isHidden = true
         spinner.stopAnimating()
+    }
+
+    // MARK: - Private Funcs
+
+    private func setUpHierarchy() {
+        addSubview(stack, centeredIn: nil)
+        stack.layout.leading(to: leadingAnchor, constant: StateLayout.minimumHorizontalInset, relation: .greaterThanOrEqual)
     }
 
     @objc private func retryTapped() { onRetry?() }

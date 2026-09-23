@@ -1,6 +1,6 @@
 # Turkcell BiP iOS Case Study
 
-Product list + detail. **29 modules across two packages**, three presentation
+Product list + detail. **32 modules across two packages**, three presentation
 stacks over one shared Clean Architecture core.
 
 > **Start here:** `MVVM-C · UIKit` is the primary path. The other two exist to
@@ -51,8 +51,8 @@ is already booted; harmless.)
 ```
 TurkcellCase.xcworkspace                 ← open this
 App/TurkcellCase-UnalCelik.xcodeproj     app bundle only: @main, assets, plist
-Packages/AppModules/                     16 targets — this app's code
-Packages/CoreKit/                        13 targets — reusable infrastructure
+Packages/AppModules/                     18 targets — this app's code
+Packages/CoreKit/                        14 targets — reusable infrastructure
 ```
 
 The app target is a thin shell that links one product, `AppFeature`:
@@ -76,7 +76,8 @@ Read `Package.swift`; the `dependencies:` lists *are* the architecture.
 
 | Rule | Why it matters |
 |---|---|
-| `ProductDomain` depends on nothing | the centre stays free of URLSession and Core Data |
+| `SharedDomain` depends on nothing, and domains depend only on it | the centre stays free of URLSession and Core Data, and no domain imports another |
+| `CommonKit` depends on no feature domain | shared presentation stays shared; product copy and display models live in `ProductPresentation` |
 | No feature depends on `ProductRepositoryLive` | features see `ProductRepositoryInterface` only |
 | Nothing links a `*Live` target except the app's registration | tests link `*Mocks`; URLSession is absent from their build |
 | `ProductListVIPER` sees `ProductDetailInterface`, never an implementation | list cannot construct detail |
@@ -238,8 +239,9 @@ data layer.
 | A flow module is not registered | logged and `assertionFailure` — never a dead button |
 
 Every absorbed error goes through `LoggingKit` (`os.Logger`), so the cause the user
-never sees is still in the log. User-facing copy lives in one English String
-Catalog in `CommonKit`, shared by all three stacks.
+never sees is still in the log. User-facing copy lives in English String
+Catalogs owned by each module (`CommonKit`, `ProductPresentation`, `AppFeature`),
+shared by all three stacks.
 
 ### No VIPER + SwiftUI
 
@@ -280,13 +282,13 @@ These check the project without launching it — useful for confirming it is
 sound without opening Xcode.
 
 ```bash
-# 37 tests across 5 bundles.
+# 50 tests across 7 bundles.
 cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
 ```bash
-# 101 tests across 11 bundles, on a simulator.
+# 105 tests across 12 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -301,8 +303,8 @@ None of the three installs or runs the app — see **Running** above for that.
 
 ## Status
 
-List and detail both render on all three stacks; **138 tests green** (101
-AppModules + 37 CoreKit). Core Data and the image pipeline are real — no
+List and detail both render on all three stacks; **155 tests green** (105
+AppModules + 50 CoreKit). Core Data and the image pipeline are real — no
 stand-ins left.
 
 One thing outstanding: `ProductListVIPER`'s controller is still a state view

@@ -1,5 +1,5 @@
 import Foundation
-import ProductDomain
+import SharedDomain
 
 public struct ErrorPresenter: Sendable {
     public init() {}

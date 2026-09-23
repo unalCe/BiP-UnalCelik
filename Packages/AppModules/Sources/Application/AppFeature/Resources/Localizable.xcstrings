@@ -1,0 +1,42 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "flowPicker.open %@" : {
+      "comment" : "Button that opens the chosen architecture. %@ is its name, e.g. MVVM-C · UIKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open %@"
+          }
+        }
+      }
+    },
+    "flowPicker.title" : {
+      "comment" : "Navigation title of the screen that picks an architecture to open",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Case Study"
+          }
+        }
+      }
+    },
+    "flowPicker.viperLockReason" : {
+      "comment" : "Explains why the UIKit/SwiftUI choice is disabled while VIPER is selected",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIPER's View contract needs a reference type. SwiftUI views are structs."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

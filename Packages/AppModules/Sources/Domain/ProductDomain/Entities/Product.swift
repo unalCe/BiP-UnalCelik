@@ -1,4 +1,5 @@
 import Foundation
+import SharedDomain
 
 public struct Product: Hashable, Sendable, Codable, Identifiable {
     /// String, not Int — the API ships `"6_id_is_a_string"` alongside `"1"`.

@@ -7,11 +7,7 @@ import PersistenceKit
 import PersistenceKitLive
 import ProductRepositoryLive
 
-// Order matters: ImageCacheKit and ProductRepository resolve the client and
-// container registered above them. Closures rather than `DependencyRegistration`
-// types only because the steps take arguments — the list is still the order.
-// The logger is registered before the list because the steps in it report
-// through it.
+// Order matters: ImageCacheKit and ProductRepository resolve the client and container registered above them.
 public enum AppDependencyRegistration {
     public static func register(
         to engine: DependencyEngine,
@@ -22,12 +18,18 @@ public enum AppDependencyRegistration {
         engine.register(value: logger, for: LoggerInterface.self)
 
         let registrations: [(DependencyEngine) -> Void] = [
-            { NetworkingKitDependencyRegistration.register(to: $0, cache: configuration.urlCache) },
-            { registerPersistentContainer(to: $0, inMemory: inMemory, logger: logger) },
-            { ImageCacheKitDependencyRegistration.register(to: $0, cache: configuration.imageCache) },
+            { NetworkingKitDependencyRegistration.register(to: $0,
+                                                           cache: configuration.urlCache) },
+            { registerPersistentContainer(to: $0,
+                                          inMemory: inMemory,
+                                          logger: logger) },
+            { ImageCacheKitDependencyRegistration.register(to: $0,
+                                                           cache: configuration.imageCache) },
             {
                 ProductRepositoryDependencyRegistration.register(
-                    to: $0, baseURL: configuration.baseURL, timeToLive: configuration.productTimeToLive
+                    to: $0,
+                    baseURL: configuration.baseURL,
+                    timeToLive: configuration.productTimeToLive
                 )
             },
         ]

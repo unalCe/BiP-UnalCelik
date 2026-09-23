@@ -6,20 +6,22 @@ import LoggingKitLive
 import ProductListInterface
 import UIKit
 
+private enum Metrics {
+    static let spacing: CGFloat = 16
+    static let horizontalInset: CGFloat = 24
+}
+
 /// TODO: proper layout
 @MainActor
 public final class FlowPickerViewController: UIViewController {
-    private enum Metrics {
-        static let spacing: CGFloat = 16
-        static let horizontalInset: CGFloat = 24
-    }
+    private let engine: DependencyEngine
+    private let logger: LoggerInterface
 
     private var selection = FlowSelection() {
         didSet { renderSelection() }
     }
 
-    private let engine: DependencyEngine
-    private let logger: LoggerInterface
+    // MARK: - Subviews
 
     private lazy var architectureControl: UISegmentedControl = {
         let control = UISegmentedControl(items: ArchitectureStyle.allCases.map(\.title))
@@ -57,6 +59,8 @@ public final class FlowPickerViewController: UIViewController {
         return stack
     }()
 
+    // MARK: - Lifecycle
+
     public init(engine: DependencyEngine = .shared, logger: LoggerInterface = OSLogger()) {
         self.engine = engine
         self.logger = logger
@@ -73,6 +77,8 @@ public final class FlowPickerViewController: UIViewController {
         setUpHierarchy()
         renderSelection()
     }
+
+    // MARK: - Private Funcs
 
     private func setUpHierarchy() {
         view.addSubview(stack) {

@@ -3,15 +3,20 @@ import LoggingKit
 import NetworkingKit
 import PersistenceKit
 import ProductDomain
+import SharedDomain
 
 /// `DomainError` stays free of infrastructure types, so whatever it cannot
 /// carry is logged here, at the one place it is thrown away.
 struct DomainErrorMapper {
     private let logger: LoggerInterface
 
+    // MARK: - Lifecycle
+
     init(logger: LoggerInterface) {
         self.logger = logger
     }
+
+    // MARK: - Public Funcs
 
     func map(_ error: Error) -> DomainError {
         switch error {
@@ -28,6 +33,8 @@ struct DomainErrorMapper {
         }
     }
 
+    // MARK: - Private Funcs
+
     // the backend's own words are shown as they are; no status code is given
     // a meaning of ours
     private func map(_ error: NetworkError) -> DomainError {
@@ -36,6 +43,9 @@ struct DomainErrorMapper {
             logger.error("request failed with \(code)", category: .networking)
             guard let message = ServerErrorMessage.extract(from: body) else { return .unknown }
             return .server(message: message)
+        case .decoding(let underlying):
+            logger.error("decoding failed: \(underlying)", category: .networking)
+            return .invalidData
         case .transport where error.isOffline:
             return .offline
         case .transport, .invalidResponse, .invalidURL:

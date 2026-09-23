@@ -1,5 +1,6 @@
 import Foundation
 import ProductDomain
+import SharedDomain
 
 public final class StubProductRepository: ProductRepositoryInterface, @unchecked Sendable {
     private let listResult: Result<[Product], Error>
@@ -8,7 +9,11 @@ public final class StubProductRepository: ProductRepositoryInterface, @unchecked
     private let lock = NSLock()
     private var requestedIDs: [String] = []
 
+    // MARK: - Public Funcs
+
     public var requestedProductIDs: [String] { lock.withLock { requestedIDs } }
+
+    // MARK: - Lifecycle
 
     public init(
         products: Result<[Product], Error> = .success(Product.fixtures),
