@@ -8,10 +8,25 @@
 
 /* Begin PBXBuildFile section */
 		90C977F1305DB898006E4C5C /* AppFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 90C977F0305DB898006E4C5C /* AppFeature */; };
+		A7E1C0DE0000000000000028 /* AccessibilityIdentifiers in Frameworks */ = {isa = PBXBuildFile; productRef = A7E1C0DE0000000000000014 /* AccessibilityIdentifiers */; };
+		A7E1C0DE0000000000000029 /* AccessibilityKit in Frameworks */ = {isa = PBXBuildFile; productRef = A7E1C0DE0000000000000015 /* AccessibilityKit */; };
+		A7E1C0DE000000000000002A /* UITestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = A7E1C0DE0000000000000016 /* UITestSupport */; };
+		A7E1C0DE000000000000002B /* ProductRepositoryMocks in Frameworks */ = {isa = PBXBuildFile; productRef = A7E1C0DE0000000000000017 /* ProductRepositoryMocks */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A7E1C0DE0000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 90C977B3305DB897006E4C5C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 90C977BA305DB897006E4C5C;
+			remoteInfo = "TurkcellCase-UnalCelik";
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		90C977BB305DB897006E4C5C /* TurkcellCase-UnalCelik.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TurkcellCase-UnalCelik.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A7E1C0DE0000000000000002 /* TurkcellCase-UnalCelikUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "TurkcellCase-UnalCelikUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -33,6 +48,11 @@
 			path = "TurkcellCase-UnalCelik";
 			sourceTree = "<group>";
 		};
+		A7E1C0DE0000000000000003 /* TurkcellCase-UnalCelikUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "TurkcellCase-UnalCelikUITests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +64,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A7E1C0DE0000000000000007 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A7E1C0DE0000000000000028 /* AccessibilityIdentifiers in Frameworks */,
+				A7E1C0DE0000000000000029 /* AccessibilityKit in Frameworks */,
+				A7E1C0DE000000000000002A /* UITestSupport in Frameworks */,
+				A7E1C0DE000000000000002B /* ProductRepositoryMocks in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -51,6 +82,7 @@
 			isa = PBXGroup;
 			children = (
 				90C977BD305DB897006E4C5C /* TurkcellCase-UnalCelik */,
+				A7E1C0DE0000000000000003 /* TurkcellCase-UnalCelikUITests */,
 				90C977BC305DB897006E4C5C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,6 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				90C977BB305DB897006E4C5C /* TurkcellCase-UnalCelik.app */,
+				A7E1C0DE0000000000000002 /* TurkcellCase-UnalCelikUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -89,6 +122,33 @@
 			productReference = 90C977BB305DB897006E4C5C /* TurkcellCase-UnalCelik.app */;
 			productType = "com.apple.product-type.application";
 		};
+		A7E1C0DE0000000000000001 /* TurkcellCase-UnalCelikUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A7E1C0DE0000000000000009 /* Build configuration list for PBXNativeTarget "TurkcellCase-UnalCelikUITests" */;
+			buildPhases = (
+				A7E1C0DE0000000000000006 /* Sources */,
+				A7E1C0DE0000000000000007 /* Frameworks */,
+				A7E1C0DE0000000000000008 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A7E1C0DE0000000000000005 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A7E1C0DE0000000000000003 /* TurkcellCase-UnalCelikUITests */,
+			);
+			name = "TurkcellCase-UnalCelikUITests";
+			packageProductDependencies = (
+				A7E1C0DE0000000000000014 /* AccessibilityIdentifiers */,
+				A7E1C0DE0000000000000015 /* AccessibilityKit */,
+				A7E1C0DE0000000000000016 /* UITestSupport */,
+				A7E1C0DE0000000000000017 /* ProductRepositoryMocks */,
+			);
+			productName = "TurkcellCase-UnalCelikUITests";
+			productReference = A7E1C0DE0000000000000002 /* TurkcellCase-UnalCelikUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -101,6 +161,10 @@
 				TargetAttributes = {
 					90C977BA305DB897006E4C5C = {
 						CreatedOnToolsVersion = 26.3;
+					};
+					A7E1C0DE0000000000000001 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = 90C977BA305DB897006E4C5C;
 					};
 				};
 			};
@@ -119,12 +183,20 @@
 			projectRoot = "";
 			targets = (
 				90C977BA305DB897006E4C5C /* TurkcellCase-UnalCelik */,
+				A7E1C0DE0000000000000001 /* TurkcellCase-UnalCelikUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		90C977B9305DB897006E4C5C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A7E1C0DE0000000000000008 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -141,12 +213,43 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A7E1C0DE0000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A7E1C0DE0000000000000005 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 90C977BA305DB897006E4C5C /* TurkcellCase-UnalCelik */;
+			targetProxy = A7E1C0DE0000000000000004 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		90C977F0305DB898006E4C5C /* AppFeature */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AppFeature;
+		};
+		A7E1C0DE0000000000000014 /* AccessibilityIdentifiers */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AccessibilityIdentifiers;
+		};
+		A7E1C0DE0000000000000015 /* AccessibilityKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AccessibilityKit;
+		};
+		A7E1C0DE0000000000000016 /* UITestSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = UITestSupport;
+		};
+		A7E1C0DE0000000000000017 /* ProductRepositoryMocks */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ProductRepositoryMocks;
 		};
 /* End XCSwiftPackageProductDependency section */
 
@@ -340,6 +443,40 @@
 			};
 			name = Release;
 		};
+		A7E1C0DE000000000000000A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BH72GVQ6N4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "unalce.TurkcellCase-UnalCelikUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "TurkcellCase-UnalCelik";
+			};
+			name = Debug;
+		};
+		A7E1C0DE000000000000000B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BH72GVQ6N4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "unalce.TurkcellCase-UnalCelikUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "TurkcellCase-UnalCelik";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -357,6 +494,15 @@
 			buildConfigurations = (
 				90C977E3305DB898006E4C5C /* Debug */,
 				90C977E4305DB898006E4C5C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A7E1C0DE0000000000000009 /* Build configuration list for PBXNativeTarget "TurkcellCase-UnalCelikUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A7E1C0DE000000000000000A /* Debug */,
+				A7E1C0DE000000000000000B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

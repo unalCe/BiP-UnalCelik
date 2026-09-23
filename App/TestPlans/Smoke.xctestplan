@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "8C4E2A71-5B3D-4F09-A6E2-1D7F3B9C0E54",
+      "name" : "Default",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "language" : "en",
+    "region" : "US"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "selectedTests" : [
+        "ProductSmokeTests"
+      ],
+      "target" : {
+        "containerPath" : "container:TurkcellCase-UnalCelik.xcodeproj",
+        "identifier" : "A7E1C0DE0000000000000001",
+        "name" : "TurkcellCase-UnalCelikUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

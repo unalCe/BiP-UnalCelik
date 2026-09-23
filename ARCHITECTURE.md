@@ -42,7 +42,9 @@ TurkcellCase.xcworkspace             ← open THIS, not the .xcodeproj
 App/                                 ← app-shaped targets ONLY
   TurkcellCase-UnalCelik.xcodeproj
   TurkcellCase-UnalCelik/            @main, Assets, Info.plist, entitlements
-  TestPlans/Unit.xctestplan          every package test target; the app scheme's Test action
+  TestPlans/Unit.xctestplan          every package test target; the app scheme's default Test plan
+  TestPlans/Smoke.xctestplan         the UI smoke suite
+  TurkcellCase-UnalCelikUITests/     XCUITest: Base/, Pages/, Scenarios/, SmokeTests/
 Packages/
   AppModules/   Package.swift · Sources/ · Tests/   ← this app's code
   CoreKit/      Package.swift · Sources/ · Tests/   ← reusable infrastructure
@@ -593,10 +595,30 @@ Core Data are absent from a feature test's build closure entirely. The
 repository tests are the exception by design: the real repository over a
 `MockHTTPClient` and an in-memory Core Data store.
 
-XCUITest requires an app bundle — an XCTest constraint, not an SPM one; a
-separate `.xcodeproj` per module would not avoid it. The standard answer is a
-per-module demo app that launches one feature against stubs. Planned for day 5
-as a worked example for `ProductDetail`.
+### UI tests
+
+XCUITest drives the real app in another process, so it cannot inject a Swift
+double. The two sides share a contract instead:
+
+| Piece | Where | Role |
+|---|---|---|
+| `UIElement` | CoreKit `AccessibilityKit` | a stable, semantic identifier; `setAccessibilityIdentifier` / `.accessibilityIdentifier(_:)` apply it to UIKit and SwiftUI views |
+| `UIElements` | AppModules `AccessibilityIdentifiers` | every identifier the app exposes, one enum per screen. Views set them, page objects look them up — both import the module, so a rename cannot happen on one side only |
+| `UITestLaunchConfiguration` | AppModules `UITestSupport` | the test encodes the flow and the HTTP stubs into the launch environment; in DEBUG the app decodes it, answers every request through `StubbedHTTPClient`, keeps Core Data in memory and turns animations off. The app contains no fixture data — responses arrive from the test |
+
+The UI test target mirrors Trendyol's layout:
+
+| Folder | Holds |
+|---|---|
+| `Base/` | `BaseUITest` (launch with a scenario and flow, pinned `en_US` locale, screenshot on failure) and `Page` (lookup by identifier, `expect(_:_:)` waits) |
+| `Pages/` | one page object per screen. A page's initializer waits for the state it names (`ProductListPage(state: .failed)`); actions that navigate return the next page, so a journey is a chain |
+| `Scenarios/` | `LaunchScenario`: what the backend answers, built from the same captured JSON as the unit tests |
+| `SmokeTests/` | one list → detail → back journey per stack, plus offline-then-retry and empty. Behavioural suites go in a sibling folder with their own plan |
+
+Rules: no `sleep`; every wait is on the UI's own state and returns as soon as
+it holds. Assertions pass `file`/`line` through, so a failure lands on the
+test's line. Copy is asserted only where no identifier can stand in (the
+empty-state sentence), with the locale pinned.
 
 ---
 

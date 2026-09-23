@@ -283,9 +283,15 @@ These check the project without launching it — useful for confirming it is
 sound without opening Xcode.
 
 ```bash
-# All 193 unit tests (both packages) through the app scheme's Unit test plan.
+# All 202 unit tests (both packages) through the app scheme's Unit test plan.
 xcodebuild test -workspace TurkcellCase.xcworkspace -scheme TurkcellCase-UnalCelik \
   -testPlan Unit -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+```
+
+```bash
+# UI smoke suite: launches the app against stubbed responses, no network.
+xcodebuild test -workspace TurkcellCase.xcworkspace -scheme TurkcellCase-UnalCelik \
+  -testPlan Smoke -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
 
 ```bash
@@ -295,7 +301,7 @@ cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
 ```
 
 ```bash
-# 134 tests across 10 bundles, on a simulator.
+# 143 tests across 11 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -306,12 +312,13 @@ xcodebuild -workspace TurkcellCase.xcworkspace -scheme TurkcellCase-UnalCelik \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 ```
 
-None of these installs or runs the app — see **Running** above for that.
+Only the Smoke plan launches the app, and only against stubs — see **Running** above to run it for real.
 
 ## Status
 
-List and detail both render on all three stacks; **193 unit tests green**
-(134 AppModules + 59 CoreKit). See ARCHITECTURE.md §9 for how they are laid
+List and detail both render on all three stacks; **202 unit tests green**
+(143 AppModules + 59 CoreKit) and a 5-test UI smoke suite, one journey per
+stack. See ARCHITECTURE.md §9 for how they are laid
 out. Core Data and the image pipeline are real — no
 stand-ins left.
 
