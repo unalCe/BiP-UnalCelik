@@ -11,9 +11,9 @@ struct ShimmerModifier: ViewModifier {
             content
                 .overlay {
                     GeometryReader { proxy in
-                        let band = proxy.size.width * 0.35
+                        let band = proxy.size.width * Skeleton.sweepBandWidth
                         LinearGradient(
-                            colors: [.clear, .white.opacity(0.38), .clear],
+                            colors: [.clear, .white.opacity(Skeleton.highlightOpacity), .clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )

@@ -33,14 +33,14 @@ final class FetchProductsUseCaseTests: XCTestCase {
         XCTAssertEqual(result, expected)
     }
 
-    func test_executeDetail_propagatesNotFound() async {
+    func test_executeDetail_propagatesTheRepositorysError() async {
         let sut = FetchProductDetail(repository: StubRepository(products: []))
 
         do {
             _ = try await sut.execute(id: "absent")
-            XCTFail("expected notFound")
+            XCTFail("expected an error")
         } catch let error as DomainError {
-            XCTAssertEqual(error, .notFound)
+            XCTAssertEqual(error, .server(message: "Access Denied"))
         } catch {
             XCTFail("expected DomainError, got \(error)")
         }
@@ -54,7 +54,7 @@ private struct StubRepository: ProductRepositoryInterface {
 
     func product(id: String) async throws -> Product {
         guard let match = products.first(where: { $0.id == id }) else {
-            throw DomainError.notFound
+            throw DomainError.server(message: "Access Denied")
         }
         return match
     }

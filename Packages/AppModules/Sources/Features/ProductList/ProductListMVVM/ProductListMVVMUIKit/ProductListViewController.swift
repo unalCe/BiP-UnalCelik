@@ -2,8 +2,8 @@ import Combine
 import CommonKit
 import CommonUI
 import ImageCacheKit
-import ProductListMVVM
 import LayoutKit
+import ProductListMVVM
 import UIKit
 
 @MainActor
@@ -14,7 +14,7 @@ public final class ProductListViewController: UIViewController {
     private typealias DataSource = UICollectionViewDiffableDataSource<Section, String>
 
     private let viewModel: ProductListViewModel
-    private let imagePrefetcher: any ImagePrefetchingInterface
+    private let imagePrefetcher: ImagePrefetchingInterface
     private var cancellables = Set<AnyCancellable>()
 
     private var itemsByID: [String: ProductDisplayModel] = [:]
@@ -58,8 +58,8 @@ public final class ProductListViewController: UIViewController {
     }
 
     public init(viewModel: ProductListViewModel,
-                imageLoader: any ImageLoaderInterface,
-                imagePrefetcher: any ImagePrefetchingInterface) {
+                imageLoader: ImageLoaderInterface,
+                imagePrefetcher: ImagePrefetchingInterface) {
         self.viewModel = viewModel
         self.imagePrefetcher = imagePrefetcher
         self.cellRegistration = UICollectionView.CellRegistration { cell, _, item in
@@ -67,7 +67,7 @@ public final class ProductListViewController: UIViewController {
                            imageLoader: imageLoader)
         }
         super.init(nibName: nil, bundle: nil)
-        title = "Products"
+        title = AppStrings.ProductList.title
     }
 
     @available(*, unavailable)
@@ -108,9 +108,9 @@ public final class ProductListViewController: UIViewController {
             stateView.hide()
             apply(items)
         case .empty:
-            stateView.showMessage("No products available.", retryable: true)
+            stateView.showMessage(AppStrings.ProductList.emptyTitle, retryable: true)
         case .failed(let error):
-            stateView.showMessage("\(error.title)\n\(error.message)", retryable: error.isRetryable)
+            stateView.showMessage("\(error.title)\n\(error.message)", retryable: true)
         }
     }
 

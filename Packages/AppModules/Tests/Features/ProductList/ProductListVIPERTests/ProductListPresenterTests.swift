@@ -36,7 +36,7 @@ final class ProductListPresenterTests: XCTestCase {
 
     func test_failure_pushesMappedError() async {
         let (sut, view, _) = makeSUT(
-            repository: StubProductRepository(products: .failure(DomainError.notFound))
+            repository: StubProductRepository(products: .failure(DomainError.server(message: "Access Denied")))
         )
 
         sut.viewDidLoad()
@@ -45,7 +45,7 @@ final class ProductListPresenterTests: XCTestCase {
         guard case .failed(let error) = view.receivedStates.last else {
             return XCTFail("expected failure, got \(String(describing: view.receivedStates.last))")
         }
-        XCTAssertFalse(error.isRetryable)
+        XCTAssertEqual(error.message, "Access Denied")
     }
 
     func test_didSelectItem_routesWithProductID() async {
@@ -87,7 +87,7 @@ final class ProductListPresenterTests: XCTestCase {
 
 @MainActor
 private final class SpyView: ProductListViewInterface {
-    var presenter: (any ProductListPresenterInterface)?
+    var presenter: ProductListPresenterInterface?
     private(set) var receivedStates: [ViewState<[ProductDisplayModel]>] = []
 
     func display(_ state: ViewState<[ProductDisplayModel]>) {

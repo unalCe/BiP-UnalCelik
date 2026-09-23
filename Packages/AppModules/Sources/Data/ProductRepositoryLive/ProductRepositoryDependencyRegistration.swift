@@ -1,26 +1,28 @@
 import DependencyEngine
 import Foundation
+import LoggingKit
 import NetworkingKit
 import PersistenceKit
 import ProductDomain
 
-public enum ProductRepositoryDependencyRegistration: DependencyRegistration {
-    public static let baseURL = URL(
-        string: "https://s3-eu-west-1.amazonaws.com/developer-application-test/"
-    )!
-
-    public static func register(to engine: DependencyEngine) {
+// Not a `DependencyRegistration`: where the API lives and how long a copy
+// stays current are the composition root's decisions, so they arrive as
+// arguments.
+public enum ProductRepositoryDependencyRegistration {
+    public static func register(to engine: DependencyEngine, baseURL: URL, timeToLive: TimeInterval) {
         guard
-            let client: any HTTPClientInterface = engine.resolve((any HTTPClientInterface).self),
-            let container: any PersistentContainerInterface = engine.resolve((any PersistentContainerInterface).self)
+            let client: HTTPClientInterface = engine.resolve(HTTPClientInterface.self),
+            let container: PersistentContainerInterface = engine.resolve(PersistentContainerInterface.self),
+            let logger: LoggerInterface = engine.resolve(LoggerInterface.self)
         else {
-            fatalError("Register NetworkingKit and the persistent container before ProductRepository")
+            fatalError("Register a logger, NetworkingKit and the persistent container before ProductRepository")
         }
 
         engine.register(
-            value: ProductRepository(client: client, container: container, baseURL: baseURL)
-                as any ProductRepositoryInterface,
-            for: (any ProductRepositoryInterface).self
+            value: ProductRepository(
+                client: client, container: container, baseURL: baseURL, logger: logger, timeToLive: timeToLive
+            ) as ProductRepositoryInterface,
+            for: ProductRepositoryInterface.self
         )
     }
 }

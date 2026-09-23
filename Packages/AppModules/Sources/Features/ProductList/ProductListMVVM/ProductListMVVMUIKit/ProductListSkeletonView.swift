@@ -9,6 +9,10 @@ import UIKit
 /// and one animation, and Core Animation paces it — nothing here runs per frame.
 @MainActor
 final class ProductListSkeletonView: UIView {
+    // text rarely fills its line, so neither do the placeholders for it
+    private static let titleWidthFraction: CGFloat = 0.85
+    private static let priceWidthFraction: CGFloat = 0.4
+
     private let shapes: CAShapeLayer = {
         let layer = CAShapeLayer()
         layer.fillColor = Skeleton.fill.cgColor
@@ -77,8 +81,11 @@ final class ProductListSkeletonView: UIView {
                 cornerWidth: ProductListLayout.imageCornerRadius,
                 cornerHeight: ProductListLayout.imageCornerRadius
             )
-            path.addRoundedRect(in: placeholder.title, cornerWidth: 4, cornerHeight: 4)
-            path.addRoundedRect(in: placeholder.price, cornerWidth: 4, cornerHeight: 4)
+            for text in [placeholder.title, placeholder.price] {
+                path.addRoundedRect(
+                    in: text, cornerWidth: Skeleton.cornerRadius, cornerHeight: Skeleton.cornerRadius
+                )
+            }
         }
         return path
     }
@@ -109,10 +116,12 @@ final class ProductListSkeletonView: UIView {
                 result.append(
                     Placeholder(
                         image: CGRect(x: x, y: y, width: width, height: width),
-                        title: CGRect(x: x, y: titleY, width: width * 0.85, height: titleHeight),
+                        title: CGRect(
+                            x: x, y: titleY, width: width * titleWidthFraction, height: titleHeight
+                        ),
                         price: CGRect(
                             x: x, y: titleY + titleHeight + ProductListLayout.priceSpacing,
-                            width: width * 0.4, height: priceHeight
+                            width: width * priceWidthFraction, height: priceHeight
                         )
                     )
                 )

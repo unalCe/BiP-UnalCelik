@@ -27,9 +27,9 @@ final class ProductListViewModelTests: XCTestCase {
         XCTAssertEqual(sut.state, .empty)
     }
 
-    func test_notFound_producesNonRetryableFailure() async {
+    func test_serverError_surfacesTheBackendsMessage() async {
         let sut = makeSUT(
-            repository: StubProductRepository(products: .failure(DomainError.notFound))
+            repository: StubProductRepository(products: .failure(DomainError.server(message: "Access Denied")))
         )
 
         sut.onAppear()
@@ -38,10 +38,10 @@ final class ProductListViewModelTests: XCTestCase {
         guard case .failed(let error) = sut.state else {
             return XCTFail("expected failure, got \(sut.state)")
         }
-        XCTAssertFalse(error.isRetryable)
+        XCTAssertEqual(error.message, "Access Denied")
     }
 
-    func test_offline_producesRetryableFailure() async {
+    func test_offline_producesOfflineFailure() async {
         let sut = makeSUT(
             repository: StubProductRepository(products: .failure(DomainError.offline))
         )
@@ -52,7 +52,7 @@ final class ProductListViewModelTests: XCTestCase {
         guard case .failed(let error) = sut.state else {
             return XCTFail("expected failure, got \(sut.state)")
         }
-        XCTAssertTrue(error.isRetryable)
+        XCTAssertEqual(error.title, "You're offline")
     }
 
     /// The ViewModel emits an id and performs no navigation — which is what

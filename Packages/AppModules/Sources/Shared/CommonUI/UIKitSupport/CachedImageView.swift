@@ -1,16 +1,20 @@
+import CommonKit
 import ImageCacheKit
 import UIKit
 
 @MainActor
 public final class CachedImageView: UIImageView {
+    private static let failurePlaceholder =
+        UIImage(systemName: ImagePlaceholder.failureSymbol) ?? UIImage()
+
     private var loadTask: Task<Void, Never>?
     private var pendingURL: URL?
     private var currentRequest: ImageRequest?
-    private let loader: any ImageLoaderInterface
+    private let loader: ImageLoaderInterface
     private let shimmer = ShimmerSweep()
     private var wantsShimmer = false
 
-    public init(loader: any ImageLoaderInterface) {
+    public init(loader: ImageLoaderInterface) {
         self.loader = loader
         super.init(frame: .zero)
         contentMode = .scaleAspectFill
@@ -25,6 +29,7 @@ public final class CachedImageView: UIImageView {
     public func setImage(from url: URL?,
                          placeholder: UIImage? = nil) {
         cancel()
+        contentMode = .scaleAspectFill
         image = placeholder
         pendingURL = url
         wantsShimmer = url != nil && placeholder == nil
@@ -33,6 +38,8 @@ public final class CachedImageView: UIImageView {
 
     var isSweeping: Bool { shimmer.isRunning }
 
+    var isShowingFailure: Bool { image === Self.failurePlaceholder }
+
     public func cancel() {
         loadTask?.cancel()
         loadTask = nil
@@ -40,6 +47,8 @@ public final class CachedImageView: UIImageView {
         currentRequest = nil
         wantsShimmer = false
         shimmer.stop()
+        isAccessibilityElement = false
+        accessibilityLabel = nil
     }
 
     public override func layoutSubviews() {
@@ -78,11 +87,40 @@ public final class CachedImageView: UIImageView {
         currentRequest = request
 
         loadTask = Task { [loader] in
-            guard let loaded = try? await loader.image(for: request) else { return }
-            guard self.currentRequest == request else { return }
-            self.image = loaded
-            self.wantsShimmer = false
-            self.shimmer.stop()
+            do {
+                let loaded = try await loader.image(for: request)
+                guard self.currentRequest == request else { return }
+                self.show(loaded)
+            } catch {
+                // a cancelled load is a resize or a reused cell, not a failure —
+                // the pass that superseded it is already loading the right thing
+                guard !(error is CancellationError), !Task.isCancelled else { return }
+                guard self.currentRequest == request else { return }
+                self.showFailure()
+            }
         }
+    }
+
+    private func show(_ loaded: UIImage) {
+        contentMode = .scaleAspectFill
+        image = loaded
+        stopSweeping()
+    }
+
+    /// `currentRequest` deliberately keeps the request that failed: the
+    /// placeholder lays out again, and clearing it there would retry on every
+    /// pass. A new size or a new `setImage` still gets a fresh attempt.
+    private func showFailure() {
+        contentMode = .center
+        tintColor = .secondaryLabel
+        image = Self.failurePlaceholder
+        isAccessibilityElement = true
+        accessibilityLabel = AppStrings.Common.imageUnavailable
+        stopSweeping()
+    }
+
+    private func stopSweeping() {
+        wantsShimmer = false
+        shimmer.stop()
     }
 }

@@ -23,7 +23,7 @@ public final class ProductListCell: UICollectionViewCell {
     private var productImageView: CachedImageView?
 
     public func configure(with item: ProductDisplayModel,
-                          imageLoader: any ImageLoaderInterface) {
+                          imageLoader: ImageLoaderInterface) {
         titleLabel.text = item.title
         priceLabel.text = item.formattedPrice
         imageView(using: imageLoader).setImage(from: item.imageURL)
@@ -38,7 +38,7 @@ public final class ProductListCell: UICollectionViewCell {
         priceLabel.text = nil
     }
 
-    private func imageView(using loader: any ImageLoaderInterface) -> CachedImageView {
+    private func imageView(using loader: ImageLoaderInterface) -> CachedImageView {
         if let productImageView { return productImageView }
 
         let imageView = CachedImageView(loader: loader)

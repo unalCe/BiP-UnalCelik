@@ -89,12 +89,79 @@ the reasoning stays in one place.
 | `LayoutKit` lives in CoreKit, not AppModules | it knows nothing about products — any UIKit app could take it |
 | What the device keeps is **a page and its details**, not a count of rows | a cache holding some fraction of a page cannot render the list coherently offline — you would show 7 of 12 products with no way to explain the gap. So the unit is the page, replacing the previous one. Under real pagination the same rule keeps page 1 only: offline you show the first page and stop, and storage is bounded however far the user scrolled. Details are not separately capped: a detail row differs from a list row only by `description`, which measures 1.9 KB across all twelve |
 | `detailVisitedAt` is a recency rank, never a TTL | nothing compares it to the clock. It sorts descending and everything past the third is evicted, so retention is count-driven: a detail visited a year ago survives until three newer ones displace it. A monotonic counter would be equivalent and immune to the device clock moving backwards; `Date` was kept because it is legible in the store and the worst case is that the wrong one of three is evicted and refetched |
-| A cached copy is used only while it is current, never as a fallback | freshness decides, not latency. Each fetch is stamped; inside a ten-minute window the device answers alone, outside it the network is the only answer and an unreachable network is an error. The two alternatives — remote-first-with-fallback, and show-cache-then-refresh — both put a copy of unknown age on screen as if it were current. That is untidy for a price and dangerous for a balance or a message. The window is injectable because ten minutes suits a catalogue, not a chat |
+| A cached copy is used only while it is current, never as a fallback | freshness decides, not latency. Each fetch is stamped; inside a ten-minute window the device answers alone, outside it the network is the only answer and an unreachable network is an error. The two alternatives — remote-first-with-fallback, and show-cache-then-refresh — both put a copy of unknown age on screen as if it were current. That is untidy for a price and dangerous for a balance or a message. The window is a required `ProductRepository(timeToLive:)` argument, set once in `AppConfiguration.default`, because ten minutes suits a catalogue, not a chat |
 | One `CDProduct` entity carries both roles, and the page bounds it | a detail is two extra columns on the row the list already wrote, not a second record. The cached page decides which rows exist: drop out of it and the row goes, description included, because tapping the list is the only way to reach a detail. An earlier version capped details at the last three visited, which made browsing a fourth product silently discard the first — measured at 1.9 KB for all twelve, that cap bought nothing and cost a round trip per revisit. Byte budgets belong on images, where one entry is ~9,000× a row |
 | `PersistenceKit` is a Core Data **stack**, not a key-value store | it used to be a Codable-blob `PersistentStoreInterface`, which was Core Data used as a dictionary and pushed the retention policy into blob bookkeeping. The stack is what stays product-agnostic: `CoreDataStack(modelName:bundle:)` loads the *caller's* model, so the entities live in `ProductRepositoryLive` where the §4 boundary rule already puts them |
 | `read` and `write` are separate, rather than one `perform` | who saves is then in the type instead of in every caller's memory. `write` saves and rolls back on throw — the context outlives the call, so a half-finished write would otherwise be committed by the next one. A test caught exactly that |
 | The grid skeleton gets one sweep, the image placeholder one each | skeleton granularity follows data-arrival granularity. Titles and prices arrive together in one JSON document, so six placeholders share one masked `CAGradientLayer`; images arrive per URL at ~820 ms apiece, so each `CachedImageView` runs its own and stops when *its* picture lands. That is six to eight concurrent animations instead of one, all paced by Core Animation with no main-thread work per frame — the rule that mattered was no timers and no per-frame state, not one animation |
-| The detail layout is written per controller, not shared | MVVM and VIPER build the same hierarchy in their own files. The duplication is deliberate: a shared `ProductDetailContentView` would put a product-shaped view in `CommonUI`, and each stack is meant to be readable end to end on its own |
+| The detail layout is written per controller, not shared | MVVM and VIPER build the same hierarchy in their own files. The duplication is deliberate: a shared `ProductDetailContentView` would put a product-shaped view in `CommonUI`, and each stack is meant to be readable end to end on its own. The numbers go with it: each file keeps a `private enum Metrics` above its view |
+
+### Failure handling, copy and configuration
+
+Recorded when the error-handling and hardcoded-value review was worked through.
+
+**Errors that are absorbed still leave a trace**
+
+| Decision | Why |
+|---|---|
+| `LoggingKit` is a seam, not a framework | two levels, one `LogCategory`, one `os.Logger`-backed `OSLogger`. Its only job is that an error a layer decides to absorb still leaves a trace. `LogCategory` is a type rather than a `String` so a typo does not compile. Messages go out `privacy: .public`, otherwise release builds redact them to `<private>` and the log says nothing |
+| The logger is injected, never a shared global | the absorbing code is exactly what needs testing: "a read failure is a miss" and "a write failure does not fail the request" are both pinned by asserting on a `SpyLogger`. A global would make those tests share mutable state. There is no silent default on `ProductRepository` either, so a composition root that forgets the logger does not compile, rather than quietly logging nowhere |
+| The logger is passed into `AppDependencyRegistration`, not registered by a step in its list | the steps in the list report through it (the store ladder does), so it has to exist before the list runs. It is still registered in the engine, and `ProductRepositoryDependencyRegistration` resolves it alongside the client and container |
+| `LoggingKitMocks` exists | two test targets (`ProductRepositoryLiveTests`, `AppFeatureTests`) need the same spy; the `XKitMocks` convention is the place for it |
+| No `LoggingKitLiveTests` | the only behaviour `OSLogger` has is forwarding to `os.Logger`, which a test cannot read back |
+| `ProductLocalDataSource` throws | returning `nil` on failure made a broken store indistinguishable from an empty one, and made a failed write look like a successful one. The store reports; the repository decides |
+| The repository owns cache-failure policy, in two named helpers | `cachedOrMiss` — a failed read is logged and treated as a miss, because the network is still the answer. `cache` — a failed write is logged and the request still succeeds, because the caller already holds fresh data. Neither reaches the user: the cache is best-effort |
+| `findOrCreate` checks the entity before fetching | a missing entity used to be a force-unwrap trap. The guard comes before the fetch because a fetch against a missing entity raises an Objective-C exception, which no `catch` can recover from. It surfaces as `PersistenceError.entityNotFound` |
+| Opening the store is a ladder, not a `fatalError` | the no-migration argument says the cache can be rebuilt, so rebuilding has to exist: open on disk; else destroy and reopen once; else run the session in memory. Each rung is logged. `PersistentStoreLoader` takes the three steps as closures, so tests drive every rung without a corrupt file |
+| The ladder has a fourth rung that cannot fail | an in-memory store only fails if the model is missing from the bundle. Rather than crash there, the loader hands back a container whose every read and write throws, and the repository already treats that as a miss. The app still runs, against the network alone. It is private to `AppFeature`, so CoreKit gains no public "fake store" type |
+| `CoreDataStack.destroyStore` goes through the coordinator | `NSPersistentStoreCoordinator.destroyPersistentStore` also removes SQLite's `-wal` and `-shm` files, which `FileManager.removeItem` would leave behind. The API takes a model name and bundle, like the initializer, so `PersistenceKit` still knows nothing about products |
+| The backend's error text is shown as it is | a failed status is not given a meaning of ours: no code is turned into "not found", and whether a request names one product or many does not matter. If the error body carries a message (S3: `<Error><Message>Access Denied</Message></Error>`), it becomes `DomainError.server(message:)` and is shown under the generic title. Without one, the error is `.unknown` and the generic message shows. The status code is logged either way |
+| `DomainError` keeps no underlying cause | adding associated values would put `NetworkError`/`PersistenceError`/`DecodingError` into `ProductDomain`, which depends on nothing. The cause is logged instead, at the one place it is thrown away: `decode`, `DomainErrorMapper`, and the repository's cache policy |
+| A missing flow module asserts, not returns | `FlowPickerViewController.openTapped` used to `return` silently, which turns a wiring bug into a dead button. It now logs and calls `assertionFailure`: loud in debug, survivable in release |
+
+**Images that fail say so**
+
+| Decision | Why |
+|---|---|
+| A failed image is a state, not an eternal shimmer | both renderers used to `try?` the loader, so a 404 or a corrupt JPEG looked exactly like a slow network forever. `CachedImage` now has an explicit `loading / loaded / failed` phase; `CachedImageView` stops its sweep and shows the same placeholder. A shimmer promises something is coming; after a failure nothing is |
+| Cancellation is never rendered as failure | `.task(id:)` cancels on every resize and identity change, and cells cancel on reuse. Treating `CancellationError` (or `Task.isCancelled`) as failure would flash a broken-image glyph mid-scroll for images that were about to load — worse than the bug being fixed. The superseding pass is already loading the right thing |
+| After a failure `CachedImageView` keeps the failed request in `currentRequest` | the placeholder changes `intrinsicContentSize` and lays out again, so clearing it would turn that pass into a retry, and every scroll pass after it into another — a request storm against a URL known to fail. Kept, the loop guard still holds while a new size (rotation, split view) or a new `setImage` (cell reuse) still gets a fresh attempt. No timer-based retry: at twelve items reuse is the retry |
+| `CachedImage` resets to loading only when the URL changes, not the size | `.task(id:)` re-fires on resize with the same URL; resetting there would flash a skeleton over pixels already on screen. A nil URL or zero size resolves straight to the failed presentation instead of shimmering with no load behind it |
+| The failure placeholder is an SF Symbol on `Skeleton.fill` | same fill as the skeleton so a failed cell keeps the grid's rhythm, and the same symbol-on-neutral idiom as `ContentUnavailableView(... systemImage: "tray")`. `photo.badge.exclamationmark` is iOS 17+, which is the floor. Defined once as `ImagePlaceholder.failureSymbol` |
+| The failed image is labelled for VoiceOver, the loading one is hidden | a skeleton is decoration (as `ProductGridSkeleton` already declares), while a missing product image is information. "Image unavailable" is the only element added |
+
+**User-facing copy and visual values have one definition each**
+
+| Decision | Why |
+|---|---|
+| One `Localizable.xcstrings`, in `CommonKit`, English only | every renderer already depends on `CommonKit`, and the copy had drifted precisely because each stack held its own ("No products" vs "No products available."). One catalog means one wording per concept. English only because unreviewed translations are worse than none. Adding a language is a catalog edit, not a code change |
+| Strings go through `AppStrings`, keyed semantically | `productList.empty.title`, not the English sentence, so rewording the copy does not orphan a translation. `String(localized:bundle: .module)` has no `defaultValue`, which means a missing entry comes back as its key. `AppStringsTests` checks every accessor, so that failure shows up in a test, not in the UI |
+| SwiftUI views take the resolved `String`, never a literal | `Text("…")`, `Button("…")` and `ContentUnavailableView("…")` look up a `LocalizedStringKey` in the **main** bundle, where this catalog is not. Passing a `String` picks the `StringProtocol` overloads, which render it verbatim |
+| The interpolated button is a catalog entry with `%@`, not concatenation | `AppStrings.FlowPicker.open(_:)` interpolates into the `LocalizationValue`, so the catalog key is `flowPicker.open %@`. A translation can then put the name wherever the grammar needs it. The flow names themselves ("MVVM-C", "VIPER", "UIKit", "SwiftUI") are product names and stay literals |
+| An empty state is a title only, in every stack | SwiftUI's `ContentUnavailableView` takes a title plus an optional description, and UIKit's `showMessage` takes one string. The empty state has one thing to say, so it is a title: `ContentUnavailableView(title, systemImage: "tray")` with no description, and the same string in `showMessage`. It is written as a title too, with no trailing period, like the error titles. Errors keep title + message: SwiftUI stacks them, UIKit joins them with a newline |
+| Drift resolved to one wording each | list empty: **"No products available"** (was "No products" in SwiftUI, "No products available." in UIKit and VIPER). Detail empty: **"Not available"** (was "Not available." in UIKit and VIPER). Everything else had not drifted and kept its exact English, so existing assertions still hold |
+| Layout numbers are private to the file that draws with them | each view file declares a `private enum Metrics` of `static let`s above its type. Nothing outside the file can read them, so no screen depends on another's spacing. The one exception is the UIKit grid: its cell, skeleton, compositional layout and prefetcher must agree on the same geometry, so those values stay on `ProductListLayout`, internal to that module |
+| `ProductGrid` wraps the SwiftUI `LazyVGrid` + padding | the content and its skeleton were building the same grid twice. Now there is one grid, its numbers are private to it, and `ProductGridTests` measures what it actually renders |
+| The SwiftUI detail title uses `@ScaledMetric(relativeTo: .title2)` | UIKit scales a 22pt title with `UIFontMetrics(forTextStyle: .title2)`. SwiftUI used `.title2`, which only matches while the system's title2 size is 22. Now both scale 22pt the same way |
+| The list image stays `aspectRatio(1)` | square is baked into `cellHeight` and the placeholder rects. A named constant would suggest it can be tuned when it cannot |
+| Shimmer band, highlight opacity and skeleton corner radius live on `Skeleton` | next to `fill` and `sweepDuration`, where the UIKit `ShimmerSweep` and the SwiftUI `ShimmerModifier` already looked. The failure glyph is `ImagePlaceholder.failureSymbol`, internal to `CommonUI`: it is not a skeleton, but both image views draw it |
+| `ErrorStateView` moved to `CommonUI` | the SwiftUI list and detail each had a copy, and both copies drifted from `StateContainerView`: padding 16 against UIKit's minimum inset of 24. Both views now read `StateLayout` (internal to `CommonUI`), so a failure looks the same in every stack. It takes an `ErrorDisplayModel` and knows nothing about products |
+| No app-wide design-tokens file | each value lives with what owns it: feature geometry on the feature's Interface, skeleton values on `Skeleton`, state views on `StateLayout`, the picker's layout on a private `Metrics` in its own file. The aim is one definition per concept, not one file for everything |
+
+**Runtime values are decided in the composition root**
+
+| Decision | Why |
+|---|---|
+| Runtime values live in one `AppConfiguration`, in `AppFeature` | base URL, product freshness window, `URLCache` capacity and decoded-image limits were spread over four files in three modules. They are all decisions the app makes, so they belong in the composition root. `AppConfiguration.default` holds the production values, and `AppDependencyRegistration.register(to:inMemory:logger:configuration:)` hands each step its share. A test can now boot the whole graph with a different window or smaller caches without touching a kit |
+| CoreKit takes its own configuration types, never `AppConfiguration` | `URLCacheConfiguration` (NetworkingKitLive) and `ImageCacheConfiguration` (ImageCacheKitLive) keep CoreKit app-agnostic. Their init defaults are the kit's default for any app. They are kept so `register(to:)` still satisfies `DependencyRegistration`. The app does not rely on them: `AppConfiguration.default` spells its values out, and a test pins them |
+| Kit registrations gain an overload, not a new protocol | `register(to:cache:)` sits beside `register(to:)`, and `AppDependencyRegistration` calls it from a closure. That is the existing "closures because the steps take arguments" pattern, so `DependencyRegistration` did not change |
+| `ProductRepositoryDependencyRegistration` is no longer a `DependencyRegistration` | it takes `baseURL` and `timeToLive` as arguments. A no-argument `register(to:)` would need defaults for both, and those defaults would be a second source of truth |
+| `ProductCachePolicy` is gone and `ProductRepository(timeToLive:)` has no default | the ten minutes now lives only in `AppConfiguration.default`. The value and semantics are unchanged. With a default on the repository, the composition root could forget to pass the window and still compile. Tests pass their own window (`tenMinutes` in `ProductRepositoryTests`) |
+| The base URL is a `guard` + `preconditionFailure`, not `URL(string:)!` | the literal is constant, so the trap cannot fire in practice. If someone mistypes the URL, the failure message names the problem instead of reporting a bare nil unwrap. No Info.plist or xcconfig plumbing, because no build configuration varies it |
+| `ImageRequest`'s 128 / 2048 / 3 are named `private static let`s on `ImageRequest` | they are part of the cache-key algorithm, not tuning: changing one changes every key. So they are named where they are used and are not injectable. `ImageRequestTests` pins the behaviour (step rounding, clamping, and a zero scale decoding at 3x) |
+| Currency: the domain (`Money`, `"USD"`) is the only default, and the store has none | the API sends no currency field (`HTTPFixtures`: `product_id`, `name`, `price`, `image`, `description`), so the currency is assumed in exactly one place. The Core Data model had `defaultValueString="TRY"`. No row ever held it, because `CoreDataProductStore.merge` always writes `price.currencyCode`. Still, two defaults that disagreed would have silently turned a USD price into TRY the day that write was dropped. `USD` was kept because it is what every screen has rendered and every stored row holds. Switching to TRY would be a product change, not a cleanup. `currencyCode` stays non-optional with no default, so a row missing it fails validation loudly instead of taking a wrong value |
+| Dropping the default needed no migration and does not reach the rebuild ladder | measured: `momc` on both versions gives the same `CDProduct` version hash (`RI7IC26G…`) and the same model checksum. Default values are not part of the hash, so existing on-disk stores open unchanged. Had the hash changed, `PersistentStoreLoader` would have handled it, because an incompatible store fails `openOnDisk` and is then destroyed and reopened |
+| Manifests declare every module a target imports | wave 2 left `AppFeature` importing `ImageCacheKit` and `PersistenceKit` through transitive links, and several test targets did the same. Every edge is now explicit (list below), so each `dependencies:` list states exactly what its target imports |
 
 ### Source grouping
 
@@ -106,6 +173,7 @@ Packages/AppModules/Sources/        Packages/CoreKit/Sources/
   Domain/ProductDomain/               Layout/LayoutKit/
   Data/ProductRepositoryLive/         Networking/NetworkingKit{,Live,Mocks}/
   Shared/CommonKit/ CommonUI/         Persistence/PersistenceKit{,Live}/
+                                      Logging/LoggingKit{,Live,Mocks}/
   Features/ProductList/…              ImageLoading/ImageCacheKit{,Live,Mocks}/
   Features/ProductDetail/…
 ```
@@ -211,6 +279,11 @@ XCUITest hosts**.
                                │
                           app target
 ```
+
+`LoggingKit` / `LoggingKitLive` / `LoggingKitMocks` sit beside the other kits and are
+left out of the drawing for width: the interface depends on nothing,
+`ProductRepositoryLive` depends on `LoggingKit`, and only `AppFeature` links
+`LoggingKitLive`.
 
 ### Dependency rules
 
@@ -435,7 +508,8 @@ Verified against the endpoints, not assumed:
 |---|---|
 | One product id is `"6_id_is_a_string"` | `Product.id` is `String`. `Int` silently drops it. |
 | Prices are integers in minor units (`9`, `557`) | `Money(minorUnits:)`. Never `Double`. |
-| Unknown id returns **HTTP 403**, not 404 | S3 denies listing. Map 403 **and** 404 to `.notFound`. |
+| Unknown id returns **HTTP 403**, not 404, with an XML body | S3 denies listing. The body's `<Message>` ("Access Denied") is shown as it is; no status code is given a meaning of ours. |
+| No currency field anywhere | `Money` assumes USD in one place; the Core Data model holds no default of its own. |
 | List omits `description`; detail supplies it | Local store merges rather than overwrites. |
 | Images ~576 KB each | Downsample before display; cancel on cell reuse. |
 
@@ -471,7 +545,7 @@ Deferred deliberately, recorded here so they do not live as scattered `TODO`s.
 | Prefetch cancellation is not reference-counted | `cancelPrefetch` and `CachedImageView.cancel()` drop the requester, not the shared download — cancellation does not propagate from an awaiter to an unstructured `Task`, and aborting could break a visible cell that joined the same request. Counting interested parties would allow a true abort. Worth it at pagination scale, not at twelve items |
 | No disk tier for decoded images | deliberate. Encoded bytes are `URLCache`'s job; decoded bitmaps stay in memory under `NSCache` |
 | The VIPER detail screen cannot be reached by tapping | `ProductListVIPER`'s controller is still a `StateContainerView` with a `TODO` where its collection view goes, so `ProductListRouter.routeToDetail` never fires. The detail module itself is finished and `FlowRegistrationTests` constructs it, so it stays compiled and covered — it is the VIPER *list* that is outstanding |
-| No Core Data migration policy | one model version, no `NSMigrationPolicy`. Acceptable because the store is a cache: every row can be refetched, so a model change can drop and rebuild rather than migrate. A store holding user-authored data could not make that trade |
+| No Core Data migration policy | one model version, no `NSMigrationPolicy`. Acceptable because the store is a cache: every row can be refetched, so a model change can drop and rebuild rather than migrate — and that rebuild now exists: a store that will not open is destroyed and reopened, then falls back to memory (`PersistentStoreLoader`). A store holding user-authored data could not make that trade |
 
 ---
 

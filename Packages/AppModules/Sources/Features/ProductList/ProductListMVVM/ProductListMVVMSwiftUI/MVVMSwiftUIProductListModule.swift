@@ -7,13 +7,13 @@ import UIKit
 
 @MainActor
 public struct MVVMSwiftUIProductListModule: ProductListInterface {
-    private let fetchProducts: any FetchProductsUseCase
-    private let imageLoader: any ImageLoaderInterface
+    private let fetchProducts: FetchProductsUseCase
+    private let imageLoader: ImageLoaderInterface
     private let onSelectProduct: (String, UINavigationController?) -> Void
 
     public init(
-        fetchProducts: any FetchProductsUseCase,
-        imageLoader: any ImageLoaderInterface,
+        fetchProducts: FetchProductsUseCase,
+        imageLoader: ImageLoaderInterface,
         onSelectProduct: @escaping (String, UINavigationController?) -> Void
     ) {
         self.fetchProducts = fetchProducts

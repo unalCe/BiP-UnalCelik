@@ -1,5 +1,13 @@
+import CommonKit
 import LayoutKit
 import UIKit
+
+/// Shared by the UIKit container and the SwiftUI error view, so a failure
+/// looks the same in every stack.
+enum StateLayout {
+    static let spacing: CGFloat = 12
+    static let minimumHorizontalInset: CGFloat = 24
+}
 
 // TODO: real layout
 @MainActor
@@ -14,7 +22,7 @@ public final class StateContainerView: UIView {
     // lazy: the closure needs self for the target-action
     private lazy var retryButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Try again", for: .normal)
+        button.setTitle(AppStrings.Common.tryAgain, for: .normal)
         button.addTarget(self, action: #selector(retryTapped), for: .touchUpInside)
         return button
     }()
@@ -24,7 +32,7 @@ public final class StateContainerView: UIView {
     private lazy var stack: UIStackView = {
         let stack = UIStackView(arrangedSubviews: [spinner, label, retryButton])
         stack.axis = .vertical
-        stack.spacing = 12
+        stack.spacing = StateLayout.spacing
         stack.alignment = .center
         return stack
     }()
@@ -41,7 +49,7 @@ public final class StateContainerView: UIView {
 
     private func setUpHierarchy() {
         addSubview(stack, centeredIn: nil)
-        stack.layout.leading(to: leadingAnchor, constant: 24, relation: .greaterThanOrEqual)
+        stack.layout.leading(to: leadingAnchor, constant: StateLayout.minimumHorizontalInset, relation: .greaterThanOrEqual)
     }
 
     public func showLoading() {

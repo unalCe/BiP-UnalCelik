@@ -1,16 +1,25 @@
+import CommonKit
 import DependencyEngine
-import ProductListInterface
 import LayoutKit
+import LoggingKit
+import LoggingKitLive
+import ProductListInterface
 import UIKit
 
 /// TODO: proper layout
 @MainActor
 public final class FlowPickerViewController: UIViewController {
+    private enum Metrics {
+        static let spacing: CGFloat = 16
+        static let horizontalInset: CGFloat = 24
+    }
+
     private var selection = FlowSelection() {
         didSet { renderSelection() }
     }
 
     private let engine: DependencyEngine
+    private let logger: LoggerInterface
 
     private lazy var architectureControl: UISegmentedControl = {
         let control = UISegmentedControl(items: ArchitectureStyle.allCases.map(\.title))
@@ -44,14 +53,15 @@ public final class FlowPickerViewController: UIViewController {
             architectureControl, frameworkControl, lockLabel, openButton,
         ])
         stack.axis = .vertical
-        stack.spacing = 16
+        stack.spacing = Metrics.spacing
         return stack
     }()
 
-    public init(engine: DependencyEngine = .shared) {
+    public init(engine: DependencyEngine = .shared, logger: LoggerInterface = OSLogger()) {
         self.engine = engine
+        self.logger = logger
         super.init(nibName: nil, bundle: nil)
-        title = "Case Study"
+        title = AppStrings.FlowPicker.title
     }
 
     @available(*, unavailable)
@@ -66,7 +76,7 @@ public final class FlowPickerViewController: UIViewController {
 
     private func setUpHierarchy() {
         view.addSubview(stack) {
-            $0.centerY(to: view).pinHorizontally(to: view, insets: .horizontal(24))
+            $0.centerY(to: view).pinHorizontally(to: view, insets: .horizontal(Metrics.horizontalInset))
         }
     }
 
@@ -79,7 +89,7 @@ public final class FlowPickerViewController: UIViewController {
         frameworkControl.isEnabled = selection.isUIFrameworkSelectable
         lockLabel.text = selection.lockReason
         lockLabel.isHidden = selection.lockReason == nil
-        openButton.setTitle("Open \(selection.style.title)", for: .normal)
+        openButton.setTitle(AppStrings.FlowPicker.open(selection.style.title), for: .normal)
     }
 
     @objc private func architectureChanged() {
@@ -93,8 +103,14 @@ public final class FlowPickerViewController: UIViewController {
     @objc private func openTapped() {
         FlowRegistration.register(selection.style, to: engine)
 
-        guard let module: any ProductListInterface =
-                engine.resolve((any ProductListInterface).self) else { return }
+        // a wiring bug, not a user error: loud in debug, a logged no-op in release
+        guard let module: ProductListInterface =
+                engine.resolve(ProductListInterface.self) else {
+            let message = "no ProductListInterface registered for \(selection.style)"
+            logger.error(message, category: .composition)
+            assertionFailure(message)
+            return
+        }
 
         let navigationController = UINavigationController()
         let root = module.createModule(navigationController: navigationController)

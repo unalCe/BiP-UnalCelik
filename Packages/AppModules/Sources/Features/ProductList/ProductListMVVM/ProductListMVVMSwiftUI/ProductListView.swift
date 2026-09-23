@@ -6,16 +6,16 @@ import SwiftUI
 
 public struct ProductListView: View {
     @ObservedObject private var viewModel: ProductListViewModel
-    private let imageLoader: any ImageLoaderInterface
+    private let imageLoader: ImageLoaderInterface
 
-    public init(viewModel: ProductListViewModel, imageLoader: any ImageLoaderInterface) {
+    public init(viewModel: ProductListViewModel, imageLoader: ImageLoaderInterface) {
         self.viewModel = viewModel
         self.imageLoader = imageLoader
     }
 
     public var body: some View {
         content
-            .navigationTitle("Products")
+            .navigationTitle(AppStrings.ProductList.title)
             .onAppear { viewModel.onAppear() }
     }
 
@@ -26,10 +26,7 @@ public struct ProductListView: View {
             ScrollView { ProductGridSkeleton() }
         case .loaded(let items):
             ScrollView {
-                LazyVGrid(
-                    columns: ProductGridMetrics.gridColumns,
-                    spacing: ProductGridMetrics.gutter
-                ) {
+                ProductGrid {
                     ForEach(items) { item in
                         Button {
                             viewModel.didSelectItem(id: item.id)
@@ -39,29 +36,11 @@ public struct ProductListView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(ProductGridMetrics.gutter)
             }
         case .empty:
-            ContentUnavailableView("No products", systemImage: "tray")
+            ContentUnavailableView(AppStrings.ProductList.emptyTitle, systemImage: "tray")
         case .failed(let error):
             ErrorStateView(error: error) { viewModel.retry() }
         }
-    }
-}
-
-struct ErrorStateView: View {
-    let error: ErrorDisplayModel
-    let retry: () -> Void
-
-    var body: some View {
-        VStack(spacing: 12) {
-            Text(error.title).font(.headline)
-            Text(error.message).font(.subheadline).foregroundStyle(.secondary)
-            if error.isRetryable {
-                Button("Try again", action: retry)
-            }
-        }
-        .multilineTextAlignment(.center)
-        .padding()
     }
 }

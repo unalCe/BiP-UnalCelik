@@ -6,15 +6,15 @@ import UIKit
 
 @MainActor
 public struct MVVMUIKitProductListModule: ProductListInterface {
-    private let fetchProducts: any FetchProductsUseCase
-    private let imageLoader: any ImageLoaderInterface
-    private let prefetcher: any ImagePrefetchingInterface
+    private let fetchProducts: FetchProductsUseCase
+    private let imageLoader: ImageLoaderInterface
+    private let prefetcher: ImagePrefetchingInterface
     private let onSelectProduct: (String, UINavigationController?) -> Void
 
     public init(
-        fetchProducts: any FetchProductsUseCase,
-        imageLoader: any ImageLoaderInterface,
-        prefetcher: any ImagePrefetchingInterface,
+        fetchProducts: FetchProductsUseCase,
+        imageLoader: ImageLoaderInterface,
+        prefetcher: ImagePrefetchingInterface,
         onSelectProduct: @escaping (String, UINavigationController?) -> Void
     ) {
         self.fetchProducts = fetchProducts

@@ -15,15 +15,15 @@ final class MoneyFormatterTests: XCTestCase {
 }
 
 final class ErrorPresenterTests: XCTestCase {
-    func test_notFound_isNotRetryable() {
-        let display = ErrorPresenter().display(for: DomainError.notFound)
+    func test_serverError_showsTheBackendsMessage() {
+        let display = ErrorPresenter().display(for: DomainError.server(message: "Access Denied"))
 
-        XCTAssertEqual(display.title, "Product not found")
-        XCTAssertFalse(display.isRetryable)
+        XCTAssertEqual(display.title, "Something went wrong")
+        XCTAssertEqual(display.message, "Access Denied")
     }
 
-    func test_offline_isRetryable() {
-        XCTAssertTrue(ErrorPresenter().display(for: DomainError.offline).isRetryable)
+    func test_offline_explainsTheConnection() {
+        XCTAssertEqual(ErrorPresenter().display(for: DomainError.offline).title, "You're offline")
     }
 
     func test_unrecognisedError_fallsBackToGeneric() {
@@ -31,7 +31,7 @@ final class ErrorPresenterTests: XCTestCase {
         let display = ErrorPresenter().display(for: Weird())
 
         XCTAssertEqual(display.title, "Something went wrong")
-        XCTAssertTrue(display.isRetryable)
+        XCTAssertEqual(display.message, "Please try again.")
     }
 }
 
@@ -47,5 +47,39 @@ final class ProductDisplayMapperTests: XCTestCase {
         XCTAssertEqual(display.id, "1")
         XCTAssertEqual(display.title, "Apples")
         XCTAssertEqual(display.description, "An apple a day.")
+    }
+}
+
+/// An unresolved key comes back as the key itself, so these fail if the catalog
+/// is missing from the module's bundle rather than quietly showing
+/// `common.tryAgain` on screen.
+final class AppStringsTests: XCTestCase {
+    func test_resolvesFromTheCatalog() {
+        XCTAssertEqual(AppStrings.Common.tryAgain, "Try again")
+        XCTAssertEqual(AppStrings.ProductList.emptyTitle, "No products available")
+        XCTAssertEqual(AppStrings.ProductDetail.descriptionUnavailable, "Description unavailable.")
+    }
+
+    func test_formatsTheInterpolatedFlowName() {
+        XCTAssertEqual(AppStrings.FlowPicker.open("VIPER · UIKit"), "Open VIPER · UIKit")
+    }
+
+    func test_noStringFallsBackToItsKey() {
+        let all = [
+            AppStrings.Common.tryAgain, AppStrings.Common.imageUnavailable,
+            AppStrings.Error.offlineTitle, AppStrings.Error.offlineMessage,
+            AppStrings.Error.invalidDataTitle, AppStrings.Error.invalidDataMessage,
+            AppStrings.Error.genericTitle, AppStrings.Error.genericMessage,
+            AppStrings.ProductList.title, AppStrings.ProductList.emptyTitle,
+            AppStrings.ProductDetail.descriptionUnavailable, AppStrings.ProductDetail.emptyTitle,
+            AppStrings.FlowPicker.title, AppStrings.FlowPicker.open("MVVM-C · UIKit"),
+            AppStrings.FlowPicker.viperLockReason,
+        ]
+        for string in all {
+            XCTAssertNil(
+                string.range(of: #"^[a-z]+[A-Za-z]*\.[A-Za-z.]+"#, options: .regularExpression),
+                "\(string) looks like an unresolved key"
+            )
+        }
     }
 }

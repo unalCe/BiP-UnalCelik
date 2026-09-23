@@ -2,11 +2,11 @@ import ImageCacheKit
 import UIKit
 
 public final class ImagePrefetcher: ImagePrefetchingInterface, @unchecked Sendable {
-    private let loader: any ImageLoaderInterface
+    private let loader: ImageLoaderInterface
     private let lock = NSLock()
     private var tasks: [ImageRequest: (token: UUID, task: Task<Void, Never>)] = [:]
 
-    public init(loader: any ImageLoaderInterface) {
+    public init(loader: ImageLoaderInterface) {
         self.loader = loader
     }
 

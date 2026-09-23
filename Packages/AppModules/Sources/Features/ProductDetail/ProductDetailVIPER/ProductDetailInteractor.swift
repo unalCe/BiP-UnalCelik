@@ -3,11 +3,11 @@ import Foundation
 import ProductDomain
 
 public struct ProductDetailInteractor: ProductDetailInteractorInterface {
-    private let fetchDetail: any FetchProductDetailUseCase
+    private let fetchDetail: FetchProductDetailUseCase
     private let mapper: ProductDisplayMapper
 
     public init(
-        fetchDetail: any FetchProductDetailUseCase,
+        fetchDetail: FetchProductDetailUseCase,
         mapper: ProductDisplayMapper = ProductDisplayMapper()
     ) {
         self.fetchDetail = fetchDetail

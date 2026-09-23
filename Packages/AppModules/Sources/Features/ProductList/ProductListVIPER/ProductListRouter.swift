@@ -6,7 +6,7 @@ import UIKit
 public final class ProductListRouter: ProductListRouterInterface {
     public weak var navigationController: UINavigationController?
 
-    @Dependency private var detailModule: any ProductDetailInterface
+    @Dependency private var detailModule: ProductDetailInterface
 
     public init(navigationController: UINavigationController?) {
         self.navigationController = navigationController
@@ -14,7 +14,7 @@ public final class ProductListRouter: ProductListRouterInterface {
 
     public init(
         navigationController: UINavigationController?,
-        detailModule: any ProductDetailInterface
+        detailModule: ProductDetailInterface
     ) {
         self.navigationController = navigationController
         self._detailModule = Dependency(wrappedValue: detailModule)

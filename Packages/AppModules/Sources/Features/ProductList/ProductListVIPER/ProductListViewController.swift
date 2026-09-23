@@ -6,7 +6,7 @@ import UIKit
 // TODO: collection view mirroring the MVVM screen
 @MainActor
 public final class ProductListViewController: UIViewController, ProductListViewInterface {
-    public var presenter: (any ProductListPresenterInterface)?
+    public var presenter: ProductListPresenterInterface?
 
     private lazy var stateView: StateContainerView = {
         let view = StateContainerView()
@@ -17,7 +17,7 @@ public final class ProductListViewController: UIViewController, ProductListViewI
 
     public init() {
         super.init(nibName: nil, bundle: nil)
-        title = "Products"
+        title = AppStrings.ProductList.title
     }
 
     @available(*, unavailable)
@@ -45,9 +45,9 @@ public final class ProductListViewController: UIViewController, ProductListViewI
             stateView.hide()
             // TODO: reload collection view
         case .empty:
-            stateView.showMessage("No products available.", retryable: true)
+            stateView.showMessage(AppStrings.ProductList.emptyTitle, retryable: true)
         case .failed(let error):
-            stateView.showMessage("\(error.title)\n\(error.message)", retryable: error.isRetryable)
+            stateView.showMessage("\(error.title)\n\(error.message)", retryable: true)
         }
     }
 }

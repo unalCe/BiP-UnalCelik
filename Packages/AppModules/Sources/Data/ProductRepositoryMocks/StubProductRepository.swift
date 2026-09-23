@@ -2,8 +2,8 @@ import Foundation
 import ProductDomain
 
 public final class StubProductRepository: ProductRepositoryInterface, @unchecked Sendable {
-    private let listResult: Result<[Product], any Error>
-    private let detailResult: Result<Product, any Error>?
+    private let listResult: Result<[Product], Error>
+    private let detailResult: Result<Product, Error>?
 
     private let lock = NSLock()
     private var requestedIDs: [String] = []
@@ -11,8 +11,8 @@ public final class StubProductRepository: ProductRepositoryInterface, @unchecked
     public var requestedProductIDs: [String] { lock.withLock { requestedIDs } }
 
     public init(
-        products: Result<[Product], any Error> = .success(Product.fixtures),
-        detail: Result<Product, any Error>? = nil
+        products: Result<[Product], Error> = .success(Product.fixtures),
+        detail: Result<Product, Error>? = nil
     ) {
         self.listResult = products
         self.detailResult = detail
@@ -26,7 +26,7 @@ public final class StubProductRepository: ProductRepositoryInterface, @unchecked
         lock.withLock { requestedIDs.append(id) }
         if let detailResult { return try detailResult.get() }
         guard let match = try listResult.get().first(where: { $0.id == id }) else {
-            throw DomainError.notFound
+            throw DomainError.unknown
         }
         return match
     }

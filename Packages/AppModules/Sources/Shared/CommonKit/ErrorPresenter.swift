@@ -4,29 +4,26 @@ import ProductDomain
 public struct ErrorPresenter: Sendable {
     public init() {}
 
-    public func display(for error: any Error) -> ErrorDisplayModel {
+    public func display(for error: Error) -> ErrorDisplayModel {
         guard let domainError = error as? DomainError else {
             return .generic
         }
 
         switch domainError {
-        case .notFound:
+        case .server(let message):
             return ErrorDisplayModel(
-                title: "Product not found",
-                message: "This product is no longer available.",
-                isRetryable: false
+                title: AppStrings.Error.genericTitle,
+                message: message
             )
         case .offline:
             return ErrorDisplayModel(
-                title: "You're offline",
-                message: "Check your connection and try again.",
-                isRetryable: true
+                title: AppStrings.Error.offlineTitle,
+                message: AppStrings.Error.offlineMessage
             )
         case .invalidData:
             return ErrorDisplayModel(
-                title: "Couldn't read the response",
-                message: "Please try again later.",
-                isRetryable: true
+                title: AppStrings.Error.invalidDataTitle,
+                message: AppStrings.Error.invalidDataMessage
             )
         case .unknown:
             return .generic
@@ -35,9 +32,10 @@ public struct ErrorPresenter: Sendable {
 }
 
 private extension ErrorDisplayModel {
-    static let generic = ErrorDisplayModel(
-        title: "Something went wrong",
-        message: "Please try again.",
-        isRetryable: true
-    )
+    static var generic: ErrorDisplayModel {
+        ErrorDisplayModel(
+            title: AppStrings.Error.genericTitle,
+            message: AppStrings.Error.genericMessage
+        )
+    }
 }

@@ -4,9 +4,20 @@ import ImageCacheKit
 import LayoutKit
 import UIKit
 
+private enum Metrics {
+    static let imageAspectRatio: CGFloat = 1
+    /// Scaled with Dynamic Type relative to `.title2`.
+    static let titleFontSize: CGFloat = 22
+    static let horizontalInset: CGFloat = 16
+    static let imageSpacing: CGFloat = 16
+    /// Between the title and the price, and between them and the description.
+    static let textSpacing: CGFloat = 12
+    static let bottomInset: CGFloat = 24
+}
+
 @MainActor
 public final class ProductDetailViewController: UIViewController, ProductDetailViewInterface {
-    public var presenter: (any ProductDetailPresenterInterface)?
+    public var presenter: ProductDetailPresenterInterface?
 
     // MARK: - Subviews
 
@@ -22,7 +33,7 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = UIFontMetrics(forTextStyle: .title2)
-            .scaledFont(for: .systemFont(ofSize: 22, weight: .semibold))
+            .scaledFont(for: .systemFont(ofSize: Metrics.titleFontSize, weight: .semibold))
         label.numberOfLines = 0
         label.adjustsFontForContentSizeCategory = true
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -53,7 +64,7 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
         let stack = UIStackView(arrangedSubviews: [titleLabel, priceLabel])
         stack.axis = .horizontal
         stack.alignment = .firstBaseline
-        stack.spacing = 12
+        stack.spacing = Metrics.textSpacing
         return stack
     }()
 
@@ -65,7 +76,7 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
 
     private let productImageView: CachedImageView
 
-    public init(imageLoader: any ImageLoaderInterface) {
+    public init(imageLoader: ImageLoaderInterface) {
         self.productImageView = CachedImageView(loader: imageLoader)
         super.init(nibName: nil, bundle: nil)
     }
@@ -91,18 +102,18 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
         contentView.addSubview(productImageView) {
             $0.top(to: contentView.topAnchor)
                 .pinHorizontally(to: contentView)
-                .aspectRatio(1)
+                .aspectRatio(Metrics.imageAspectRatio)
         }
 
         contentView.addSubview(headerStack) {
-            $0.below(productImageView, spacing: 16)
-                .pinHorizontally(to: contentView, insets: .horizontal(16))
+            $0.below(productImageView, spacing: Metrics.imageSpacing)
+                .pinHorizontally(to: contentView, insets: .horizontal(Metrics.horizontalInset))
         }
 
         contentView.addSubview(descriptionLabel) {
-            $0.below(headerStack, spacing: 12)
-                .pinHorizontally(to: contentView, insets: .horizontal(16))
-                .bottom(to: contentView.bottomAnchor, constant: 24)
+            $0.below(headerStack, spacing: Metrics.textSpacing)
+                .pinHorizontally(to: contentView, insets: .horizontal(Metrics.horizontalInset))
+                .bottom(to: contentView.bottomAnchor, constant: Metrics.bottomInset)
         }
 
         view.addSubview(stateView, pinnedToEdges: .zero)
@@ -120,9 +131,9 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
             stateView.hide()
             show(item)
         case .empty:
-            stateView.showMessage("Not available.", retryable: false)
+            stateView.showMessage(AppStrings.ProductDetail.emptyTitle, retryable: false)
         case .failed(let error):
-            stateView.showMessage("\(error.title)\n\(error.message)", retryable: error.isRetryable)
+            stateView.showMessage("\(error.title)\n\(error.message)", retryable: true)
         }
     }
 
@@ -131,7 +142,7 @@ public final class ProductDetailViewController: UIViewController, ProductDetailV
         priceLabel.text = item.formattedPrice
         productImageView.setImage(from: item.imageURL)
 
-        descriptionLabel.text = item.description ?? "Description unavailable."
+        descriptionLabel.text = item.description ?? AppStrings.ProductDetail.descriptionUnavailable
         descriptionLabel.font = item.description == nil ? .italicBody : .body
         descriptionLabel.textColor = item.description == nil ? .secondaryLabel : .label
     }

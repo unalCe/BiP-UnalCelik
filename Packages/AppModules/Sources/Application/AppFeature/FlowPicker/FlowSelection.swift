@@ -1,3 +1,4 @@
+import CommonKit
 import Foundation
 
 public enum ArchitectureStyle: String, CaseIterable, Sendable {
@@ -48,7 +49,7 @@ public struct FlowSelection: Equatable, Sendable {
     public var lockReason: String? {
         isUIFrameworkSelectable
             ? nil
-            : "VIPER's View contract needs a reference type. SwiftUI views are structs."
+            : AppStrings.FlowPicker.viperLockReason
     }
 
     public mutating func select(_ architecture: ArchitectureStyle) {

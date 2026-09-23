@@ -3,7 +3,7 @@ import Foundation
 
 @MainActor
 public protocol ProductDetailViewInterface: AnyObject {
-    var presenter: (any ProductDetailPresenterInterface)? { get set }
+    var presenter: ProductDetailPresenterInterface? { get set }
     func display(_ state: ViewState<ProductDisplayModel>)
 }
 

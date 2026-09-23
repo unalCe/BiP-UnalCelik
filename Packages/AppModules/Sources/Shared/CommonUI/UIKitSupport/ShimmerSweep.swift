@@ -15,7 +15,7 @@ public final class ShimmerSweep {
         layer.endPoint = CGPoint(x: 1, y: 0.5)
         layer.colors = [
             UIColor.white.withAlphaComponent(0).cgColor,
-            UIColor.white.withAlphaComponent(0.38).cgColor,
+            UIColor.white.withAlphaComponent(Skeleton.highlightOpacity).cgColor,
             UIColor.white.withAlphaComponent(0).cgColor,
         ]
         return layer
@@ -35,7 +35,7 @@ public final class ShimmerSweep {
         mask.frame = bounds
         mask.path = path
 
-        let band = bounds.width * 0.35
+        let band = bounds.width * Skeleton.sweepBandWidth
         gradient.frame = CGRect(x: -band, y: 0, width: band, height: bounds.height)
     }
 

@@ -4,16 +4,16 @@ import PersistenceKit
 import ProductDomain
 
 struct CoreDataProductStore: ProductLocalDataSource {
-    private let container: any PersistentContainerInterface
+    private let container: PersistentContainerInterface
 
-    init(container: any PersistentContainerInterface) {
+    init(container: PersistentContainerInterface) {
         self.container = container
     }
 
     // MARK: - Reads
 
-    func products() async -> Cached<[Product]>? {
-        let page = try? await container.read { context -> Cached<[Product]>? in
+    func products() async throws -> Cached<[Product]>? {
+        try await container.read { context -> Cached<[Product]>? in
             let request = CDProduct.fetchRequest()
             request.predicate = NSPredicate(format: "listPosition != nil")
             request.sortDescriptors = [NSSortDescriptor(key: "listPosition", ascending: true)]
@@ -22,11 +22,10 @@ struct CoreDataProductStore: ProductLocalDataSource {
             guard let fetchedAt = rows.first?.listFetchedAt, !rows.isEmpty else { return nil }
             return Cached(value: rows.map(ProductMapper.map), fetchedAt: fetchedAt)
         }
-        return page ?? nil
     }
 
-    func detail(id: String) async -> Cached<Product>? {
-        let row = try? await container.read { context -> Cached<Product>? in
+    func detail(id: String) async throws -> Cached<Product>? {
+        try await container.read { context -> Cached<Product>? in
             let request = CDProduct.fetchRequest()
             request.predicate = NSPredicate(
                 format: "id == %@ AND detailVisitedAt != nil", id
@@ -37,13 +36,12 @@ struct CoreDataProductStore: ProductLocalDataSource {
                   let fetchedAt = row.detailVisitedAt else { return nil }
             return Cached(value: ProductMapper.map(row), fetchedAt: fetchedAt)
         }
-        return row ?? nil
     }
 
     // MARK: - Writes
 
-    func saveListPage(_ products: [Product], at date: Date) async {
-        try? await container.write { context in
+    func saveListPage(_ products: [Product], at date: Date) async throws {
+        try await container.write { context in
             let ids = products.map(\.id)
             let departed = CDProduct.fetchRequest()
             departed.predicate = NSPredicate(
@@ -62,12 +60,11 @@ struct CoreDataProductStore: ProductLocalDataSource {
         }
     }
 
-    func saveDetail(_ product: Product, at date: Date) async {
-        try? await container.write { context in
+    func saveDetail(_ product: Product, at date: Date) async throws {
+        try await container.write { context in
             let row = try Self.findOrCreate(id: product.id, in: context)
             Self.merge(product, into: row)
             row.detailVisitedAt = date
-
         }
     }
 
@@ -85,11 +82,15 @@ struct CoreDataProductStore: ProductLocalDataSource {
     private static func findOrCreate(
         id: String, in context: NSManagedObjectContext
     ) throws -> CDProduct {
+        // checked before the fetch: a fetch against a missing entity raises an
+        // Objective-C exception, which no `catch` can recover from
+        guard let entity = NSEntityDescription.entity(
+            forEntityName: CDProduct.entityName, in: context
+        ) else {
+            throw PersistenceError.entityNotFound(name: CDProduct.entityName)
+        }
         if let existing = try find(id: id, in: context) { return existing }
-        let row = CDProduct(
-            entity: NSEntityDescription.entity(forEntityName: CDProduct.entityName, in: context)!,
-            insertInto: context
-        )
+        let row = CDProduct(entity: entity, insertInto: context)
         row.id = id
         return row
     }

@@ -6,10 +6,10 @@ import UIKit
 
 @MainActor
 public struct MVVMUIKitProductDetailModule: ProductDetailInterface {
-    private let fetchDetail: any FetchProductDetailUseCase
-    private let imageLoader: any ImageLoaderInterface
+    private let fetchDetail: FetchProductDetailUseCase
+    private let imageLoader: ImageLoaderInterface
 
-    public init(fetchDetail: any FetchProductDetailUseCase, imageLoader: any ImageLoaderInterface) {
+    public init(fetchDetail: FetchProductDetailUseCase, imageLoader: ImageLoaderInterface) {
         self.fetchDetail = fetchDetail
         self.imageLoader = imageLoader
     }

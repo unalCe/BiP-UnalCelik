@@ -1,19 +1,17 @@
 import CommonUI
 import SwiftUI
 
-struct ProductGridSkeleton: View {
+private enum Metrics {
     /// Enough to fill a screen; the real count is unknown until the response
     /// lands.
-    var count: Int = 8
+    static let skeletonCount = 8
+}
 
+struct ProductGridSkeleton: View {
     var body: some View {
-        LazyVGrid(
-            columns: ProductGridMetrics.gridColumns,
-            spacing: ProductGridMetrics.gutter
-        ) {
-            ForEach(0..<count, id: \.self) { _ in ProductCellSkeleton() }
+        ProductGrid {
+            ForEach(0..<Metrics.skeletonCount, id: \.self) { _ in ProductCellSkeleton() }
         }
-        .padding(ProductGridMetrics.gutter)
         .shimmering()
         .accessibilityHidden(true)
     }

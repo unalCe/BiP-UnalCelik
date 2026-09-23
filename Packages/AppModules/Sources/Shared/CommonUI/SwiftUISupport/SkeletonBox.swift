@@ -5,12 +5,23 @@ public enum Skeleton {
     public static let fill = UIColor.systemGray5
 
     public static let sweepDuration: TimeInterval = 1.1
+
+    /// A fraction of the host's width, not points.
+    public static let sweepBandWidth: CGFloat = 0.35
+
+    public static let highlightOpacity: CGFloat = 0.38
+
+    public static let cornerRadius: CGFloat = 4
+}
+
+enum ImagePlaceholder {
+    static let failureSymbol = "photo.badge.exclamationmark"
 }
 
 public struct SkeletonBox: View {
     private let cornerRadius: CGFloat
 
-    public init(cornerRadius: CGFloat = 4) {
+    public init(cornerRadius: CGFloat = Skeleton.cornerRadius) {
         self.cornerRadius = cornerRadius
     }
 
@@ -32,7 +43,7 @@ public struct SkeletonLine: View {
         _ style: Font.TextStyle,
         lines: Int = 1,
         widthFraction: CGFloat = 1,
-        cornerRadius: CGFloat = 4
+        cornerRadius: CGFloat = Skeleton.cornerRadius
     ) {
         self.style = style
         self.lines = lines

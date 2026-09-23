@@ -15,12 +15,12 @@ import UIKit
 public enum FlowRegistration {
     public static func register(_ style: FlowStyle, to engine: DependencyEngine) {
         guard
-            let repository: any ProductRepositoryInterface =
-                engine.resolve((any ProductRepositoryInterface).self),
-            let imageLoader: any ImageLoaderInterface =
-                engine.resolve((any ImageLoaderInterface).self),
-            let prefetcher: any ImagePrefetchingInterface =
-                engine.resolve((any ImagePrefetchingInterface).self)
+            let repository: ProductRepositoryInterface =
+                engine.resolve(ProductRepositoryInterface.self),
+            let imageLoader: ImageLoaderInterface =
+                engine.resolve(ImageLoaderInterface.self),
+            let prefetcher: ImagePrefetchingInterface =
+                engine.resolve(ImagePrefetchingInterface.self)
         else {
             fatalError("Run AppDependencyRegistration before registering a flow")
         }
@@ -28,8 +28,8 @@ public enum FlowRegistration {
         let fetchProducts = FetchProducts(repository: repository)
         let fetchDetail = FetchProductDetail(repository: repository)
 
-        let detail: any ProductDetailInterface
-        let list: any ProductListInterface
+        let detail: ProductDetailInterface
+        let list: ProductListInterface
 
         switch style {
         case .mvvmUIKit:
@@ -54,12 +54,12 @@ public enum FlowRegistration {
             list = VIPERProductListModule(fetchProducts: fetchProducts)
         }
 
-        engine.register(value: detail, for: (any ProductDetailInterface).self)
-        engine.register(value: list, for: (any ProductListInterface).self)
+        engine.register(value: detail, for: ProductDetailInterface.self)
+        engine.register(value: list, for: ProductListInterface.self)
     }
 
     private static func push(
-        _ detail: any ProductDetailInterface
+        _ detail: ProductDetailInterface
     ) -> (String, UINavigationController?) -> Void {
         { productID, navigationController in
             let destination = detail.createModule(

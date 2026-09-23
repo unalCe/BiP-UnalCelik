@@ -3,19 +3,19 @@ import Foundation
 
 @MainActor
 public final class ProductDetailPresenter: ProductDetailPresenterInterface {
-    public weak var view: (any ProductDetailViewInterface)?
+    public weak var view: ProductDetailViewInterface?
 
     private let productID: String
-    private let interactor: any ProductDetailInteractorInterface
-    private let router: any ProductDetailRouterInterface
+    private let interactor: ProductDetailInteractorInterface
+    private let router: ProductDetailRouterInterface
     private let errorPresenter: ErrorPresenter
 
     private var loadTask: Task<Void, Never>?
 
     public init(
         productID: String,
-        interactor: any ProductDetailInteractorInterface,
-        router: any ProductDetailRouterInterface,
+        interactor: ProductDetailInteractorInterface,
+        router: ProductDetailRouterInterface,
         errorPresenter: ErrorPresenter = ErrorPresenter()
     ) {
         self.productID = productID

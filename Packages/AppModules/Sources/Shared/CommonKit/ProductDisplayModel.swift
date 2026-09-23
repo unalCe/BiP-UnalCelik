@@ -11,5 +11,4 @@ public struct ProductDisplayModel: Equatable, Identifiable, Sendable {
 public struct ErrorDisplayModel: Equatable, Sendable {
     public let title: String
     public let message: String
-    public let isRetryable: Bool
 }

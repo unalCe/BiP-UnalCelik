@@ -41,6 +41,7 @@ enum ProductListLayout {
         return UICollectionViewCompositionalLayout(section: section)
     }
 
+    /// The gutter also insets the grid, so there is one more gutter than columns.
     static func itemWidth(in containerWidth: CGFloat) -> CGFloat {
         (containerWidth - gutter * CGFloat(columns + 1)) / CGFloat(columns)
     }

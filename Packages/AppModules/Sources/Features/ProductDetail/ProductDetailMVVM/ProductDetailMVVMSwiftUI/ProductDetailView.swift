@@ -4,12 +4,25 @@ import ImageCacheKit
 import ProductDetailMVVM
 import SwiftUI
 
+private enum Metrics {
+    static let imageAspectRatio: CGFloat = 1
+    /// Scaled with Dynamic Type relative to `.title2`.
+    static let titleFontSize: CGFloat = 22
+    static let horizontalInset: CGFloat = 16
+    static let imageSpacing: CGFloat = 16
+    /// Between the title and the price, and between them and the description.
+    static let textSpacing: CGFloat = 12
+    static let bottomInset: CGFloat = 24
+}
+
 public struct ProductDetailView: View {
     @ObservedObject private var viewModel: ProductDetailViewModel
-    private let imageLoader: any ImageLoaderInterface
+    private let imageLoader: ImageLoaderInterface
+
+    @ScaledMetric(relativeTo: .title2) private var titleFontSize = Metrics.titleFontSize
 
     public init(viewModel: ProductDetailViewModel,
-                imageLoader: any ImageLoaderInterface) {
+                imageLoader: ImageLoaderInterface) {
         self.viewModel = viewModel
         self.imageLoader = imageLoader
     }
@@ -27,14 +40,14 @@ public struct ProductDetailView: View {
             ProgressView()
         case .loaded(let item):
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: Metrics.imageSpacing) {
                     Color.clear
-                        .aspectRatio(1, contentMode: .fit)
+                        .aspectRatio(Metrics.imageAspectRatio, contentMode: .fit)
                         .overlay { CachedImage(url: item.imageURL, loader: imageLoader) }
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(alignment: .firstTextBaseline, spacing: 12) {
-                            Text(item.title).font(.title2.weight(.semibold))
+                    VStack(alignment: .leading, spacing: Metrics.textSpacing) {
+                        HStack(alignment: .firstTextBaseline, spacing: Metrics.textSpacing) {
+                            Text(item.title).font(.system(size: titleFontSize, weight: .semibold))
                             Spacer(minLength: 0)
                             Text(item.formattedPrice)
                                 .font(.headline)
@@ -44,28 +57,20 @@ public struct ProductDetailView: View {
                         if let description = item.description {
                             Text(description).font(.body)
                         } else {
-                            Text("Description unavailable.")
+                            Text(AppStrings.ProductDetail.descriptionUnavailable)
                                 .font(.body.italic())
                                 .foregroundStyle(.secondary)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, Metrics.horizontalInset)
+                    .padding(.bottom, Metrics.bottomInset)
                 }
             }
         case .empty:
-            ContentUnavailableView("Not available", systemImage: "tray")
+            ContentUnavailableView(AppStrings.ProductDetail.emptyTitle, systemImage: "tray")
         case .failed(let error):
-            VStack(spacing: 12) {
-                Text(error.title).font(.headline)
-                Text(error.message).font(.subheadline).foregroundStyle(.secondary)
-                if error.isRetryable {
-                    Button("Try again") { viewModel.retry() }
-                }
-            }
-            .multilineTextAlignment(.center)
-            .padding()
+            ErrorStateView(error: error) { viewModel.retry() }
         }
     }
 }

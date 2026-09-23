@@ -8,6 +8,7 @@ import PackageDescription
 // folders rather than becoming modules.
 let package = Package(
     name: "AppModules",
+    defaultLocalization: "en",
     platforms: [.iOS(.v17)],
     products: [
         .library(name: "ProductDomain", targets: ["ProductDomain"]),
@@ -48,6 +49,7 @@ let package = Package(
                 "ProductDomain",
                 .product(name: "NetworkingKit", package: "CoreKit"),
                 .product(name: "PersistenceKit", package: "CoreKit"),
+                .product(name: "LoggingKit", package: "CoreKit"),
                 .product(name: "DependencyEngine", package: "CoreKit"),
             ],
             path: "Sources/Data/ProductRepositoryLive",
@@ -63,7 +65,8 @@ let package = Package(
         .target(
             name: "CommonKit",
             dependencies: ["ProductDomain"],
-            path: "Sources/Shared/CommonKit"
+            path: "Sources/Shared/CommonKit",
+            resources: [.process("Resources/Localizable.xcstrings")]
         ),
         .target(
             name: "CommonUI",
@@ -89,7 +92,7 @@ let package = Package(
         .target(
             name: "ProductListMVVMUIKit",
             dependencies: [
-                "ProductListMVVM", "ProductListInterface", "CommonKit", "CommonUI",
+                "ProductListMVVM", "ProductListInterface", "ProductDomain", "CommonKit", "CommonUI",
                 .product(name: "LayoutKit", package: "CoreKit"),
                 .product(name: "ImageCacheKit", package: "CoreKit"),
             ],
@@ -98,7 +101,7 @@ let package = Package(
         .target(
             name: "ProductListMVVMSwiftUI",
             dependencies: [
-                "ProductListMVVM", "ProductListInterface", "CommonUI",
+                "ProductListMVVM", "ProductListInterface", "ProductDomain", "CommonKit", "CommonUI",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
             ],
             path: "Sources/Features/ProductList/ProductListMVVM/ProductListMVVMSwiftUI"
@@ -131,13 +134,16 @@ let package = Package(
             dependencies: [
                 .product(name: "LayoutKit", package: "CoreKit"),
                 .product(name: "ImageCacheKit", package: "CoreKit"),
-                "ProductDetailMVVM", "ProductDetailInterface", "CommonUI",
+                "ProductDetailMVVM", "ProductDetailInterface", "ProductDomain", "CommonKit", "CommonUI",
             ],
             path: "Sources/Features/ProductDetail/ProductDetailMVVM/ProductDetailMVVMUIKit"
         ),
         .target(
             name: "ProductDetailMVVMSwiftUI",
-            dependencies: ["ProductDetailMVVM", "ProductDetailInterface", "CommonUI"],
+            dependencies: [
+                "ProductDetailMVVM", "ProductDetailInterface", "ProductDomain", "CommonKit", "CommonUI",
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+            ],
             path: "Sources/Features/ProductDetail/ProductDetailMVVM/ProductDetailMVVMSwiftUI"
         ),
         .target(
@@ -163,8 +169,12 @@ let package = Package(
                 "ProductDetailInterface", "ProductDetailMVVMUIKit",
                 "ProductDetailMVVMSwiftUI", "ProductDetailVIPER",
                 .product(name: "DependencyEngine", package: "CoreKit"),
+                .product(name: "LoggingKit", package: "CoreKit"),
+                .product(name: "LoggingKitLive", package: "CoreKit"),
                 .product(name: "NetworkingKitLive", package: "CoreKit"),
+                .product(name: "PersistenceKit", package: "CoreKit"),
                 .product(name: "PersistenceKitLive", package: "CoreKit"),
+                .product(name: "ImageCacheKit", package: "CoreKit"),
                 .product(name: "ImageCacheKitLive", package: "CoreKit"),
             ],
             path: "Sources/Application/AppFeature"
@@ -179,9 +189,14 @@ let package = Package(
         .testTarget(
             name: "ProductRepositoryLiveTests",
             dependencies: [
-                "ProductRepositoryLive",
+                "ProductRepositoryLive", "ProductDomain",
+                .product(name: "DependencyEngine", package: "CoreKit"),
+                .product(name: "NetworkingKit", package: "CoreKit"),
                 .product(name: "NetworkingKitMocks", package: "CoreKit"),
+                .product(name: "PersistenceKit", package: "CoreKit"),
                 .product(name: "PersistenceKitLive", package: "CoreKit"),
+                .product(name: "LoggingKit", package: "CoreKit"),
+                .product(name: "LoggingKitMocks", package: "CoreKit"),
             ],
             path: "Tests/Data/ProductRepositoryLiveTests"
         ),
@@ -195,18 +210,20 @@ let package = Package(
         ),
         .testTarget(
             name: "CommonKitTests",
-            dependencies: ["CommonKit"],
+            dependencies: ["CommonKit", "ProductDomain"],
             path: "Tests/Shared/CommonKitTests"
         ),
         .testTarget(
             name: "ProductListMVVMTests",
-            dependencies: ["ProductListMVVM", "ProductRepositoryMocks"],
+            dependencies: ["ProductListMVVM", "ProductRepositoryMocks", "ProductDomain", "CommonKit"],
             path: "Tests/Features/ProductList/ProductListMVVMTests"
         ),
         .testTarget(
             name: "ProductListMVVMUIKitTests",
             dependencies: [
-                "ProductListMVVMUIKit", "ProductRepositoryMocks", "CommonKit",
+                "ProductListMVVMUIKit", "ProductListMVVM", "ProductRepositoryMocks",
+                "ProductDomain", "CommonKit", "CommonUI",
+                .product(name: "ImageCacheKit", package: "CoreKit"),
                 .product(name: "ImageCacheKitMocks", package: "CoreKit"),
             ],
             path: "Tests/Features/ProductList/ProductListMVVMUIKitTests"
@@ -217,31 +234,43 @@ let package = Package(
                 "ProductListMVVMSwiftUI", "ProductListMVVMUIKit", "ProductListMVVM",
                 "ProductRepositoryMocks", "ProductDomain", "CommonKit",
                 .product(name: "ImageCacheKitMocks", package: "CoreKit"),
-                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
             ],
             path: "Tests/Features/ProductList/ProductListMVVMSwiftUITests"
         ),
         .testTarget(
             name: "ProductListVIPERTests",
-            dependencies: ["ProductListVIPER", "ProductRepositoryMocks"],
+            dependencies: [
+                "ProductListVIPER", "ProductRepositoryMocks", "ProductDomain", "CommonKit", "ProductDetailInterface",
+            ],
             path: "Tests/Features/ProductList/ProductListVIPERTests"
         ),
         .testTarget(
             name: "ProductDetailMVVMUIKitTests",
             dependencies: [
-                "ProductDetailMVVMUIKit", "ProductDetailMVVM", "ProductRepositoryMocks", "CommonKit",
+                "ProductDetailMVVMUIKit", "ProductDetailMVVM",
+                "ProductRepositoryMocks", "ProductDomain", "CommonKit",
+                .product(name: "ImageCacheKit", package: "CoreKit"),
                 .product(name: "ImageCacheKitMocks", package: "CoreKit"),
             ],
             path: "Tests/Features/ProductDetail/ProductDetailMVVMUIKitTests"
         ),
         .testTarget(
             name: "ProductDetailMVVMTests",
-            dependencies: ["ProductDetailMVVM", "ProductRepositoryMocks"],
+            dependencies: ["ProductDetailMVVM", "ProductRepositoryMocks", "ProductDomain", "CommonKit"],
             path: "Tests/Features/ProductDetail/ProductDetailMVVMTests"
         ),
         .testTarget(
             name: "AppFeatureTests",
-            dependencies: ["AppFeature"],
+            dependencies: [
+                "AppFeature", "ProductDomain", "ProductListInterface", "ProductDetailInterface",
+                .product(name: "DependencyEngine", package: "CoreKit"),
+                .product(name: "NetworkingKit", package: "CoreKit"),
+                .product(name: "NetworkingKitLive", package: "CoreKit"),
+                .product(name: "PersistenceKit", package: "CoreKit"),
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+                .product(name: "ImageCacheKitLive", package: "CoreKit"),
+                .product(name: "LoggingKitMocks", package: "CoreKit"),
+            ],
             path: "Tests/Application/AppFeatureTests"
         ),
     ],
