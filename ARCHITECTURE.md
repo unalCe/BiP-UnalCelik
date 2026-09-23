@@ -141,7 +141,7 @@ Recorded when the error-handling and hardcoded-value review was worked through.
 | An empty state is a title only, in every stack | SwiftUI's `ContentUnavailableView` takes a title plus an optional description, and UIKit's `showMessage` takes one string. The empty state has one thing to say, so it is a title: `ContentUnavailableView(title, systemImage: "tray")` with no description, and the same string in `showMessage`. It is written as a title too, with no trailing period, like the error titles. Errors keep title + message: SwiftUI stacks them, UIKit joins them with a newline |
 | Drift resolved to one wording each | list empty: **"No products available"** (was "No products" in SwiftUI, "No products available." in UIKit and VIPER). Detail empty: **"Not available"** (was "Not available." in UIKit and VIPER). Everything else had not drifted and kept its exact English, so existing assertions still hold |
 | Layout numbers are private to the file that draws with them | each view file declares a `private enum Metrics` of `static let`s above its type. Nothing outside the file can read them, so no screen depends on another's spacing. The one exception is the UIKit grid: its cell, skeleton, compositional layout and prefetcher must agree on the same geometry, so those values stay on `ProductListLayout`, internal to that module |
-| `ProductGrid` wraps the SwiftUI `LazyVGrid` + padding | the content and its skeleton were building the same grid twice. Now there is one grid, its numbers are private to it, and `ProductGridTests` measures what it actually renders |
+| `ProductGrid` wraps the SwiftUI `LazyVGrid` + padding | the content and its skeleton were building the same grid twice. Now there is one grid and its numbers are private to it |
 | The SwiftUI detail title uses `@ScaledMetric(relativeTo: .title2)` | UIKit scales a 22pt title with `UIFontMetrics(forTextStyle: .title2)`. SwiftUI used `.title2`, which only matches while the system's title2 size is 22. Now both scale 22pt the same way |
 | The list image stays `aspectRatio(1)` | square is baked into `cellHeight` and the placeholder rects. A named constant would suggest it can be tuned when it cannot |
 | Shimmer band, highlight opacity and skeleton corner radius live on `Skeleton` | next to `fill` and `sweepDuration`, where the UIKit `ShimmerSweep` and the SwiftUI `ShimmerModifier` already looked. The failure glyph is `ImagePlaceholder.failureSymbol`, internal to `CommonUI`: it is not a skeleton, but both image views draw it |
@@ -159,7 +159,7 @@ Recorded when the error-handling and hardcoded-value review was worked through.
 | `ProductCachePolicy` is gone and `ProductRepository(timeToLive:)` has no default | the ten minutes now lives only in `AppConfiguration.default`. The value and semantics are unchanged. With a default on the repository, the composition root could forget to pass the window and still compile. Tests pass their own window (`tenMinutes` in `ProductRepositoryTests`) |
 | The base URL is a `guard` + `preconditionFailure`, not `URL(string:)!` | the literal is constant, so the trap cannot fire in practice. If someone mistypes the URL, the failure message names the problem instead of reporting a bare nil unwrap. No Info.plist or xcconfig plumbing, because no build configuration varies it |
 | `ImageRequest`'s 128 / 2048 / 3 are named `private static let`s on `ImageRequest` | they are part of the cache-key algorithm, not tuning: changing one changes every key. So they are named where they are used and are not injectable. `ImageRequestTests` pins the behaviour (step rounding, clamping, and a zero scale decoding at 3x) |
-| Currency: the domain (`Money`, `"USD"`) is the only default, and the store has none | the API sends no currency field (`HTTPFixtures`: `product_id`, `name`, `price`, `image`, `description`), so the currency is assumed in exactly one place. The Core Data model had `defaultValueString="TRY"`. No row ever held it, because `CoreDataProductStore.merge` always writes `price.currencyCode`. Still, two defaults that disagreed would have silently turned a USD price into TRY the day that write was dropped. `USD` was kept because it is what every screen has rendered and every stored row holds. Switching to TRY would be a product change, not a cleanup. `currencyCode` stays non-optional with no default, so a row missing it fails validation loudly instead of taking a wrong value |
+| Currency: the domain (`Money`, `"USD"`) is the only default, and the store has none | the API sends no currency field (`ProductListResponse.json`: `product_id`, `name`, `price`, `image`, `description`), so the currency is assumed in exactly one place. The Core Data model had `defaultValueString="TRY"`. No row ever held it, because `CoreDataProductStore.merge` always writes `price.currencyCode`. Still, two defaults that disagreed would have silently turned a USD price into TRY the day that write was dropped. `USD` was kept because it is what every screen has rendered and every stored row holds. Switching to TRY would be a product change, not a cleanup. `currencyCode` stays non-optional with no default, so a row missing it fails validation loudly instead of taking a wrong value |
 | Dropping the default needed no migration and does not reach the rebuild ladder | measured: `momc` on both versions gives the same `CDProduct` version hash (`RI7IC26G…`) and the same model checksum. Default values are not part of the hash, so existing on-disk stores open unchanged. Had the hash changed, `PersistentStoreLoader` would have handled it, because an incompatible store fails `openOnDisk` and is then destroyed and reopened |
 | Manifests declare every module a target imports | wave 2 left `AppFeature` importing `ImageCacheKit` and `PersistenceKit` through transitive links, and several test targets did the same. Every edge is now explicit (list below), so each `dependencies:` list states exactly what its target imports |
 
@@ -551,16 +551,25 @@ Verified against the endpoints, not assumed:
 
 ## 9. Testing
 
-| Suite | Host | Covers |
-|---|---|---|
-| `*Tests` per module | iOS simulator | state machines, mappers, policies, layout |
-| per-module UI tests | demo app in the xcodeproj | one screen's states in isolation |
-| app UI tests | main app | cross-module journey, smoke only |
+Unit tests cover **logic only**: view models, presenters, interactors,
+routers, use cases, mappers and the data layer. View controllers, SwiftUI
+views, layout and skeleton placement are not unit tested — that is UI-test
+territory, planned separately.
 
-Feature tests build against stubs, never implementations: `ProductRepositoryMocks`
-in place of `ProductRepositoryLive`, `NetworkingKitMocks` in place of
-`NetworkingKitLive`. So `URLSession` and Core Data are absent from a feature
-test's build closure entirely.
+| Rule | Why |
+|---|---|
+| One `*Tests` target per module, beside it | fast, focused builds; ownership is obvious |
+| Stored subject + collaborators, built in `setUp()` → `reCreate(...)`, released in `tearDown()` | no test rebuilds the same graph by hand; variants call `reCreate` with arguments. XCTest keeps every test-case instance alive for the whole run, so `tearDown` must nil everything |
+| Mocks use `invokedX` / `invokedXCount` / `invokedXParameters(List)` / `stubbedX` | tests read as assert-before, act, assert-after |
+| A mock used by one target lives in its `Mocks/` folder; shared ones in a `*Mocks` module | `ProductDomainMocks` (use cases), `ProductRepositoryMocks` (repository + fixtures), `NetworkingKitMocks`, `ImageCacheKitMocks`, `LoggingKitMocks` |
+| Product data comes from captured API responses | `ProductFixture` decodes `ProductRepositoryMocks/Resources/*.json` through the real `ProductAPI` DTOs and mapper, so fixtures cannot drift from the wire format |
+| Time is never the synchronisation mechanism | view models and presenters expose `loadTask` internally; tests `await loadTask?.value`. Held-open work uses `AsyncGate`; freshness moves a test clock |
+| `TestSupport` is the only target that imports XCTest | `XCTAssertThrowsErrorAsync`, `XCTAssertLocalized`, `AsyncGate`. `*Mocks` stay XCTest-free so UI-test launch scenarios can reuse them |
+
+Feature tests build against mocks, never implementations. So `URLSession` and
+Core Data are absent from a feature test's build closure entirely. The
+repository tests are the exception by design: the real repository over a
+`MockHTTPClient` and an in-memory Core Data store.
 
 XCUITest requires an app bundle — an XCTest constraint, not an SPM one; a
 separate `.xcodeproj` per module would not avoid it. The standard answer is a

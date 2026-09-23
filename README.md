@@ -85,7 +85,7 @@ Read `Package.swift`; the `dependencies:` lists *are* the architecture.
 | `LayoutKit` depends on nothing | any UIKit app could lift it out |
 
 Each kit ships `XKit` (protocols) and `XKitLive` (the real thing), plus
-`XKitMocks` (stubs + captured fixtures) where tests need a double. Two
+`XKitMocks` (invoked/stubbed mocks) where tests need a double. Two
 exceptions: `LayoutKit` is a UIKit constraint DSL with nothing to swap, so no
 interface/implementation split; and `PersistenceKit` has no `Mocks` because its
 tests run the real stack against an in-memory store, which is strictly stronger
@@ -282,13 +282,13 @@ These check the project without launching it — useful for confirming it is
 sound without opening Xcode.
 
 ```bash
-# 50 tests across 7 bundles.
+# 59 tests across 8 bundles.
 cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
 ```bash
-# 105 tests across 12 bundles, on a simulator.
+# 126 tests across 10 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -303,8 +303,9 @@ None of the three installs or runs the app — see **Running** above for that.
 
 ## Status
 
-List and detail both render on all three stacks; **155 tests green** (105
-AppModules + 50 CoreKit). Core Data and the image pipeline are real — no
+List and detail both render on all three stacks; **185 unit tests green**
+(126 AppModules + 59 CoreKit). See ARCHITECTURE.md §9 for how they are laid
+out. Core Data and the image pipeline are real — no
 stand-ins left.
 
 One thing outstanding: `ProductListVIPER`'s controller is still a state view
