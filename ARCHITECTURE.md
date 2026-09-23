@@ -403,10 +403,29 @@ consequence of the module split, not a style preference — `ProductListMVVMUIKi
 cannot import `ProductDetailMVVMUIKit`, so only the composition root can own
 the transition.
 
-- UIKit coordinator → `UINavigationController`
-- SwiftUI coordinator → `ObservableObject` owning a `NavigationPath`
+MVVM modules conform to `ProductListScreenFactory` / `ProductDetailScreenFactory`
+(in the Interface targets), which never mention `UINavigationController`:
 
-Same `onSelectProduct` seam, two navigation backends.
+```swift
+func makeScreen(onSelectProduct: @escaping (String) -> Void) -> UIViewController
+func makeScreen(productID: String, onFinish: @escaping () -> Void) -> UIViewController
+```
+
+`ProductFlowCoordinator` owns the `UINavigationController` and every
+transition: `start()` sets the list as root, `showDetail(productID:)` pushes,
+`finishDetail()` pops. Screens capture it `weak`; `AppShellViewController`
+retains it for as long as its flow is on screen.
+
+One coordinator drives both renderers. SwiftUI screens arrive as
+`UIHostingController`s, so they sit on the same UIKit stack; a second
+`NavigationPath`-based backend would duplicate the coordinator without
+changing what a reviewer can observe. Same `onSelectProduct` seam, one
+navigation owner.
+
+VIPER modules keep `ProductListInterface` / `ProductDetailInterface`, which do
+take a `UINavigationController`: their Router navigates by definition.
+`VIPERFlowCoordinator` only sets the root so the shell starts every flow the
+same way.
 
 ### UIKit view conventions
 
@@ -521,12 +540,15 @@ and is not copied.
 
 ### The architecture toggle rides on this
 
-All three implementations conform to one interface, so switching is a
-re-registration, not a `switch` in the composition root:
+`FlowRegistration.makeCoordinator(for:engine:)` builds each flow from the same
+engine-resolved repository and image cache. MVVM factories are passed to
+`ProductFlowCoordinator` through its initializer. VIPER is the one style that
+also registers something, its detail module, because `ProductListRouter`
+resolves its destination through `@Dependency`:
 
 ```swift
-engine.register(value: MVVMUIKitProductList(), for: ProductListInterface.self)
-engine.register(value: VIPERProductList(),     for: ProductListInterface.self)
+engine.register(value: detail, for: ProductDetailInterface.self)
+return VIPERFlowCoordinator(list: VIPERProductListModule(…))
 ```
 
 Structurally the same move as isowords choosing `DictionarySqliteClient` vs
@@ -578,7 +600,7 @@ Deferred deliberately, recorded here so they do not live as scattered `TODO`s.
 | No concurrency ceiling on decodes | **measured twice as not worth building.** A limiter at 2 moved peak footprint by nothing (41.1/46.8 MB unbounded vs 41.4/44.0/38.4 MB limited): `URLSession` caps connections per host at ~6 and `CGImageSourceCreateThumbnailAtIndex` decodes subsampled, so decodes never stack. `CG raster data` sits at 256 KB resident. Revisited when prefetching landed — UIKit queued 4 prefetches, not dozens, and the answer did not change |
 | Prefetch cancellation is not reference-counted | `cancelPrefetch` and `CachedImageView.cancel()` drop the requester, not the shared download — cancellation does not propagate from an awaiter to an unstructured `Task`, and aborting could break a visible cell that joined the same request. Counting interested parties would allow a true abort. Worth it at pagination scale, not at twelve items |
 | No disk tier for decoded images | deliberate. Encoded bytes are `URLCache`'s job; decoded bitmaps stay in memory under `NSCache` |
-| The VIPER detail screen cannot be reached by tapping | `ProductListVIPER`'s controller is still a `StateContainerView` with a `TODO` where its collection view goes, so `ProductListRouter.routeToDetail` never fires. The detail module itself is finished and `FlowRegistrationTests` constructs it, so it stays compiled and covered — it is the VIPER *list* that is outstanding |
+| The VIPER detail screen cannot be reached by tapping | `ProductListVIPER`'s controller is still a `StateContainerView` with a `TODO` where its collection view goes, so `ProductListRouter.routeToDetail` never fires. The detail module itself is finished and `FlowRegistrationTests` registers it, so it stays compiled and covered — it is the VIPER *list* that is outstanding |
 | No Core Data migration policy | one model version, no `NSMigrationPolicy`. Acceptable because the store is a cache: every row can be refetched, so a model change can drop and rebuild rather than migrate — and that rebuild now exists: a store that will not open is destroyed and reopened, then falls back to memory (`PersistentStoreLoader`). A store holding user-authored data could not make that trade |
 
 ---

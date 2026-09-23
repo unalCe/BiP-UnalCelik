@@ -6,33 +6,44 @@ import NetworkingKitLive
 import PersistenceKit
 import ProductDetailInterface
 import ProductDomain
-import ProductListInterface
 import UIKit
 import XCTest
 @testable import AppFeature
 
 @MainActor
 final class FlowRegistrationTests: XCTestCase {
-    /// Every style must resolve to a working pair of modules. Exhaustive over
-    /// `FlowStyle`, so adding or removing a case updates this for free.
-    func test_everyFlowStyle_registersBothModules() {
+    /// Every style must produce a coordinator that lands on a root screen.
+    /// Exhaustive over `FlowStyle`, so adding or removing a case updates this
+    /// for free.
+    func test_everyFlowStyle_startsOnARootScreen() {
         for style in FlowStyle.allCases {
-            let engine = makeBootstrappedEngine()
+            let coordinator = FlowRegistration.makeCoordinator(for: style, engine: makeBootstrappedEngine())
 
-            FlowRegistration.register(style, to: engine)
+            coordinator.start()
 
-            let list: ProductListInterface? =
-                engine.resolve(ProductListInterface.self)
-            let detail: ProductDetailInterface? =
-                engine.resolve(ProductDetailInterface.self)
-
-            XCTAssertNotNil(list, "no list module for \(style)")
-            XCTAssertNotNil(detail, "no detail module for \(style)")
-            XCTAssertNotNil(
-                list?.createModule(navigationController: UINavigationController()),
-                "list module for \(style) produced no view controller"
-            )
+            XCTAssertEqual(coordinator.navigationController.viewControllers.count, 1,
+                           "coordinator for \(style) did not set a root screen")
         }
+    }
+
+    /// MVVM-C: the coordinator owns navigation, so MVVM styles get one.
+    func test_mvvmStyles_getTheProductFlowCoordinator() {
+        for style in [FlowStyle.mvvmUIKit, .mvvmSwiftUI] {
+            let coordinator = FlowRegistration.makeCoordinator(for: style, engine: makeBootstrappedEngine())
+
+            XCTAssertTrue(coordinator is ProductFlowCoordinator, "\(style)")
+        }
+    }
+
+    /// VIPER's router resolves its destination through `@Dependency`, so the
+    /// VIPER detail module must be in the engine.
+    func test_viper_registersTheDetailModuleForItsRouter() {
+        let engine = makeBootstrappedEngine()
+
+        _ = FlowRegistration.makeCoordinator(for: .viperUIKit, engine: engine)
+
+        let detail: ProductDetailInterface? = engine.resolve(ProductDetailInterface.self)
+        XCTAssertNotNil(detail)
     }
 
     /// Switching architecture must not rebuild the repository — that is the
@@ -42,8 +53,8 @@ final class FlowRegistrationTests: XCTestCase {
         let before: ProductRepositoryInterface? =
             engine.resolve(ProductRepositoryInterface.self)
 
-        FlowRegistration.register(.mvvmUIKit, to: engine)
-        FlowRegistration.register(.viperUIKit, to: engine)
+        _ = FlowRegistration.makeCoordinator(for: .mvvmUIKit, engine: engine)
+        _ = FlowRegistration.makeCoordinator(for: .viperUIKit, engine: engine)
 
         let after: ProductRepositoryInterface? =
             engine.resolve(ProductRepositoryInterface.self)

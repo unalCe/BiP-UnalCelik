@@ -5,7 +5,7 @@ import ProductDomain
 import UIKit
 
 @MainActor
-public struct MVVMUIKitProductDetailModule: ProductDetailInterface {
+public struct MVVMUIKitProductDetailModule: ProductDetailScreenFactory {
     private let fetchDetail: FetchProductDetailUseCase
     private let imageLoader: ImageLoaderInterface
 
@@ -14,14 +14,9 @@ public struct MVVMUIKitProductDetailModule: ProductDetailInterface {
         self.imageLoader = imageLoader
     }
 
-    public func createModule(
-        navigationController: UINavigationController?,
-        productID: String
-    ) -> UIViewController {
+    public func makeScreen(productID: String, onFinish: @escaping () -> Void) -> UIViewController {
         let viewModel = ProductDetailViewModel(productID: productID, fetchDetail: fetchDetail)
-        viewModel.onFinish = { [weak navigationController] in
-            navigationController?.popViewController(animated: true)
-        }
+        viewModel.onFinish = onFinish
         return ProductDetailViewController(viewModel: viewModel, imageLoader: imageLoader)
     }
 }

@@ -108,14 +108,15 @@ No third-party layout library. Insets are directional, so layouts mirror in RTL.
 | View | `UIViewController` | `struct View` | `UIViewController` + view protocol |
 | Logic | `ProductListViewModel` | **same type** | `Presenter` + `Interactor` |
 | Binding | `$state.sink` | `@ObservedObject` | `weak var view` |
-| Navigation | coordinator in `AppFeature` | coordinator + `NavigationPath` | `Router` inside the module |
+| Navigation | `ProductFlowCoordinator` in `AppFeature` | **same coordinator** (screens are hosted) | `Router` inside the module |
 
-Switching is a **re-registration** against one interface, not a `switch` in the
-composition root:
+Switching builds a new coordinator over the same core. MVVM screens only
+report intents (`onSelectProduct`, `onFinish`); the coordinator owns the stack:
 
 ```swift
-engine.register(value: MVVMUIKitProductListModule(…), for: ProductListInterface.self)
-engine.register(value: VIPERProductListModule(…),     for: ProductListInterface.self)
+case .mvvmUIKit:  ProductFlowCoordinator(list: MVVMUIKitProductListModule(…),  detail: MVVMUIKitProductDetailModule(…))
+case .mvvmSwiftUI: ProductFlowCoordinator(list: MVVMSwiftUIProductListModule(…), detail: MVVMSwiftUIProductDetailModule(…))
+case .viperUIKit: VIPERFlowCoordinator(list: VIPERProductListModule(…))   // routers navigate
 ```
 
 The repository and image cache are shared instances, so toggling mid-session

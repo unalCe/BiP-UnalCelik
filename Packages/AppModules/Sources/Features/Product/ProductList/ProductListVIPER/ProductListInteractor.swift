@@ -3,6 +3,10 @@ import Foundation
 import ProductDomain
 import ProductPresentation
 
+public protocol ProductListInteractorInterface: Sendable {
+    func loadProducts() async throws -> [ProductDisplayModel]
+}
+
 public struct ProductListInteractor: ProductListInteractorInterface {
     private let fetchProducts: FetchProductsUseCase
     private let mapper: ProductDisplayMapper

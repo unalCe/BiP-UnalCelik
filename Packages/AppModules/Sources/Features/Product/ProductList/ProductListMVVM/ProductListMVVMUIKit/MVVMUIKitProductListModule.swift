@@ -5,29 +5,24 @@ import ProductListMVVM
 import UIKit
 
 @MainActor
-public struct MVVMUIKitProductListModule: ProductListInterface {
+public struct MVVMUIKitProductListModule: ProductListScreenFactory {
     private let fetchProducts: FetchProductsUseCase
     private let imageLoader: ImageLoaderInterface
     private let prefetcher: ImagePrefetchingInterface
-    private let onSelectProduct: (String, UINavigationController?) -> Void
 
     public init(
         fetchProducts: FetchProductsUseCase,
         imageLoader: ImageLoaderInterface,
-        prefetcher: ImagePrefetchingInterface,
-        onSelectProduct: @escaping (String, UINavigationController?) -> Void
+        prefetcher: ImagePrefetchingInterface
     ) {
         self.fetchProducts = fetchProducts
         self.imageLoader = imageLoader
         self.prefetcher = prefetcher
-        self.onSelectProduct = onSelectProduct
     }
 
-    public func createModule(navigationController: UINavigationController?) -> UIViewController {
+    public func makeScreen(onSelectProduct: @escaping (String) -> Void) -> UIViewController {
         let viewModel = ProductListViewModel(fetchProducts: fetchProducts)
-        viewModel.onSelectProduct = { [onSelectProduct] id in
-            onSelectProduct(id, navigationController)
-        }
+        viewModel.onSelectProduct = onSelectProduct
         return ProductListViewController(
             viewModel: viewModel,
             imageLoader: imageLoader,
