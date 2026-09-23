@@ -6,26 +6,18 @@ import SwiftUI
 import UIKit
 
 @MainActor
-public struct MVVMSwiftUIProductListModule: ProductListInterface {
+public struct MVVMSwiftUIProductListModule: ProductListScreenFactory {
     private let fetchProducts: FetchProductsUseCase
     private let imageLoader: ImageLoaderInterface
-    private let onSelectProduct: (String, UINavigationController?) -> Void
 
-    public init(
-        fetchProducts: FetchProductsUseCase,
-        imageLoader: ImageLoaderInterface,
-        onSelectProduct: @escaping (String, UINavigationController?) -> Void
-    ) {
+    public init(fetchProducts: FetchProductsUseCase, imageLoader: ImageLoaderInterface) {
         self.fetchProducts = fetchProducts
         self.imageLoader = imageLoader
-        self.onSelectProduct = onSelectProduct
     }
 
-    public func createModule(navigationController: UINavigationController?) -> UIViewController {
+    public func makeScreen(onSelectProduct: @escaping (String) -> Void) -> UIViewController {
         let viewModel = ProductListViewModel(fetchProducts: fetchProducts)
-        viewModel.onSelectProduct = { [onSelectProduct] id in
-            onSelectProduct(id, navigationController)
-        }
+        viewModel.onSelectProduct = onSelectProduct
         return UIHostingController(
             rootView: ProductListView(viewModel: viewModel, imageLoader: imageLoader)
         )

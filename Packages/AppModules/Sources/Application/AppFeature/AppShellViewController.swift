@@ -2,7 +2,6 @@ import CommonKit
 import DependencyEngine
 import LayoutKit
 import LoggingKit
-import ProductListInterface
 import UIKit
 
 /// Hosts the running flow and swaps it for another on request.
@@ -13,7 +12,10 @@ final class AppShellViewController: UIViewController {
     private let logger: LoggerInterface
 
     private(set) var currentStyle: FlowStyle
-    private(set) var flowController: UINavigationController?
+    /// Retained here: screens hold their coordinator only weakly.
+    private(set) var coordinator: FlowCoordinator?
+
+    var flowController: UINavigationController? { coordinator?.navigationController }
 
     // MARK: - Lifecycle
 
@@ -38,22 +40,18 @@ final class AppShellViewController: UIViewController {
     // MARK: - Internal Funcs
 
     func start(_ style: FlowStyle) {
-        FlowRegistration.register(style, to: engine)
+        let next = FlowRegistration.makeCoordinator(for: style, engine: engine)
+        next.start()
 
-        guard let module: ProductListInterface =
-                engine.resolve(ProductListInterface.self) else {
-            let message = "no ProductListInterface registered for \(style)"
+        guard let root = next.navigationController.viewControllers.first else {
+            let message = "coordinator for \(style) started without a root screen"
             logger.error(message, category: .composition)
             assertionFailure(message)
             return
         }
-
-        let navigationController = UINavigationController()
-        let root = module.createModule(navigationController: navigationController)
         root.navigationItem.rightBarButtonItem = makeInfoButton()
-        navigationController.setViewControllers([root], animated: false)
 
-        replaceFlow(with: navigationController)
+        replaceFlow(with: next)
         currentStyle = style
     }
 
@@ -80,19 +78,20 @@ final class AppShellViewController: UIViewController {
         return button
     }
 
-    private func replaceFlow(with next: UINavigationController) {
+    private func replaceFlow(with next: FlowCoordinator) {
         let previous = flowController
+        let nextController = next.navigationController
 
         previous?.willMove(toParent: nil)
-        addChild(next)
-        view.addSubview(next.view, pinnedToEdges: .zero)
-        next.didMove(toParent: self)
-        flowController = next
+        addChild(nextController)
+        view.addSubview(nextController.view, pinnedToEdges: .zero)
+        nextController.didMove(toParent: self)
+        coordinator = next
 
         guard let previous else { return }
-        next.view.alpha = 0
+        nextController.view.alpha = 0
         UIView.animate(withDuration: 0.3) {
-            next.view.alpha = 1
+            nextController.view.alpha = 1
         } completion: { _ in
             previous.view.removeFromSuperview()
             previous.removeFromParent()
