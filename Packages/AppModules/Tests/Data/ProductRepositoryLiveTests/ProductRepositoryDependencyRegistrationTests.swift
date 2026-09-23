@@ -5,13 +5,15 @@ import NetworkingKit
 import NetworkingKitMocks
 import PersistenceKit
 import ProductDomain
+import ProductRepositoryMocks
 import XCTest
+
 @testable import ProductRepositoryLive
 
 final class ProductRepositoryDependencyRegistrationTests: XCTestCase {
     func test_registeredRepository_usesTheGivenBaseURLAndTimeToLive() async throws {
         let engine = DependencyEngine()
-        let client = MockHTTPClient(always: .ok(HTTPFixtures.productList))
+        let client = MockHTTPClient(always: .ok(ProductFixture.data("ProductListResponse")))
         engine.register(value: client as HTTPClientInterface, for: HTTPClientInterface.self)
         let container: PersistentContainerInterface = try makeTestContainer()
         engine.register(value: container, for: PersistentContainerInterface.self)

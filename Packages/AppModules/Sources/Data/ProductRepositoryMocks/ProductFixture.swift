@@ -17,7 +17,8 @@ public enum ProductFixture {
         ProductMapper.map(decode(ProductDTO.self, from: name))
     }
 
-    /// The raw bytes, for tests that feed a mock HTTP client.
+    /// The raw bytes, for tests that feed a mock HTTP client. Unknown ids come
+    /// back as `AccessDenied.xml` with a 403 — the bucket denies listing.
     public static func data(_ name: String, extension fileExtension: String = "json") -> Data {
         guard let url = Bundle.module.url(forResource: name, withExtension: fileExtension) else {
             preconditionFailure("no fixture \(name).\(fileExtension) in ProductRepositoryMocks/Resources")

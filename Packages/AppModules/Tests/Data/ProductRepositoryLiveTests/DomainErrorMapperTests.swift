@@ -1,19 +1,33 @@
 import LoggingKitMocks
 import NetworkingKit
 import NetworkingKitMocks
+import ProductRepositoryMocks
 import PersistenceKit
 import ProductDomain
 import SharedDomain
 import XCTest
+
 @testable import ProductRepositoryLive
 
 final class DomainErrorMapperTests: XCTestCase {
-    private let logger = SpyLogger()
-    private lazy var sut = DomainErrorMapper(logger: logger)
+    private var mapper: DomainErrorMapper!
+    private var logger: SpyLogger!
+
+    override func setUp() {
+        super.setUp()
+        logger = SpyLogger()
+        mapper = DomainErrorMapper(logger: logger)
+    }
+
+    override func tearDown() {
+        mapper = nil
+        logger = nil
+        super.tearDown()
+    }
 
     func test_refusalWithAMessage_surfacesTheBackendsOwnWords() {
         XCTAssertEqual(
-            sut.map(status(403, body: HTTPFixtures.accessDenied)),
+            mapper.map(status(403, body: ProductFixture.data("AccessDenied", extension: "xml"))),
             .server(message: "Access Denied")
         )
         XCTAssertEqual(logger.errors.count, 1)
@@ -22,35 +36,35 @@ final class DomainErrorMapperTests: XCTestCase {
     /// No status code is given a meaning of ours: without a message, a 404 is
     /// as generic as a 500.
     func test_statusWithoutAMessage_mapsToUnknown() {
-        XCTAssertEqual(sut.map(status(404)), .unknown)
-        XCTAssertEqual(sut.map(status(500)), .unknown)
+        XCTAssertEqual(mapper.map(status(404)), .unknown)
+        XCTAssertEqual(mapper.map(status(500)), .unknown)
     }
 
     func test_unreadableBody_mapsToUnknown() {
-        XCTAssertEqual(sut.map(status(502, body: Data("<html>Bad Gateway</html>".utf8))), .unknown)
+        XCTAssertEqual(mapper.map(status(502, body: Data("<html>Bad Gateway</html>".utf8))), .unknown)
     }
 
     func test_noConnection_mapsToOffline() {
         let underlying = NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)
-        XCTAssertEqual(sut.map(NetworkError.transport(underlying)), .offline)
+        XCTAssertEqual(mapper.map(NetworkError.transport(underlying)), .offline)
     }
 
     func test_decodingFailure_mapsToInvalidData_andIsLogged() {
         struct Mismatch: Error {}
 
-        XCTAssertEqual(sut.map(NetworkError.decoding(Mismatch())), .invalidData)
+        XCTAssertEqual(mapper.map(NetworkError.decoding(Mismatch())), .invalidData)
         XCTAssertEqual(logger.errors.map(\.category), [.networking])
     }
 
     func test_domainError_passesThroughUnchanged() {
-        XCTAssertEqual(sut.map(DomainError.invalidData), .invalidData)
+        XCTAssertEqual(mapper.map(DomainError.invalidData), .invalidData)
     }
 
     /// `DomainError` cannot carry the cause, so the log has to.
     func test_persistenceError_isLoggedBeforeBecomingUnknown() {
         struct Disk: Error {}
 
-        XCTAssertEqual(sut.map(PersistenceError.readFailed(Disk())), .unknown)
+        XCTAssertEqual(mapper.map(PersistenceError.readFailed(Disk())), .unknown)
         XCTAssertEqual(logger.errors.map(\.category), [.persistence])
     }
 
