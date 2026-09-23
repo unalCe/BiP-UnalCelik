@@ -1,26 +1,50 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "flowPicker.open %@" : {
-      "comment" : "Button that opens the chosen architecture. %@ is its name, e.g. MVVM-C · UIKit",
+    "flowPicker.current %@" : {
+      "comment" : "Names the architecture the app is running now. %@ is its name, e.g. MVVM-C · UIKit",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open %@"
+            "value" : "Running %@"
+          }
+        }
+      }
+    },
+    "flowPicker.infoButton" : {
+      "comment" : "Accessibility label of the navigation bar button that opens the architecture switcher",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch architecture"
+          }
+        }
+      }
+    },
+    "flowPicker.restart %@" : {
+      "comment" : "Button that restarts the app on the chosen architecture. %@ is its name, e.g. VIPER · UIKit",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restart with %@"
           }
         }
       }
     },
     "flowPicker.title" : {
-      "comment" : "Navigation title of the screen that picks an architecture to open",
+      "comment" : "Navigation title of the sheet that switches the running architecture",
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Case Study"
+            "value" : "Architecture"
           }
         }
       }

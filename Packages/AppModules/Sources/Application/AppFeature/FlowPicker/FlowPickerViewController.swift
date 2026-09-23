@@ -1,37 +1,47 @@
 import CommonKit
-import DependencyEngine
 import LayoutKit
-import LoggingKit
-import LoggingKitLive
-import ProductListInterface
 import UIKit
 
 private enum Metrics {
     static let spacing: CGFloat = 16
     static let horizontalInset: CGFloat = 24
+    static let topInset: CGFloat = 24
 }
 
-/// TODO: proper layout
+/// Switches the running architecture. It only picks: restarting is the
+/// caller's job, handed in as `onRestart`.
 @MainActor
 public final class FlowPickerViewController: UIViewController {
-    private let engine: DependencyEngine
-    private let logger: LoggerInterface
+    private let currentStyle: FlowStyle
+    private let onRestart: (FlowStyle) -> Void
 
-    private var selection = FlowSelection() {
+    private var selection: FlowSelection {
         didSet { renderSelection() }
     }
 
     // MARK: - Subviews
 
+    private let currentLabel: UILabel = {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.font = .preferredFont(forTextStyle: .headline)
+        label.adjustsFontForContentSizeCategory = true
+        return label
+    }()
+
     private lazy var architectureControl: UISegmentedControl = {
         let control = UISegmentedControl(items: ArchitectureStyle.allCases.map(\.title))
-        control.addTarget(self, action: #selector(architectureChanged), for: .valueChanged)
+        control.addTarget(self,
+                          action: #selector(architectureChanged),
+                          for: .valueChanged)
         return control
     }()
 
     private lazy var frameworkControl: UISegmentedControl = {
         let control = UISegmentedControl(items: UIFramework.allCases.map(\.title))
-        control.addTarget(self, action: #selector(frameworkChanged), for: .valueChanged)
+        control.addTarget(self,
+                          action: #selector(frameworkChanged),
+                          for: .valueChanged)
         return control
     }()
 
@@ -40,19 +50,26 @@ public final class FlowPickerViewController: UIViewController {
         label.numberOfLines = 0
         label.font = .preferredFont(forTextStyle: .footnote)
         label.textColor = .secondaryLabel
+        label.adjustsFontForContentSizeCategory = true
         return label
     }()
 
-    private lazy var openButton: UIButton = {
+    private lazy var restartButton: UIButton = {
         let button = UIButton(type: .system)
         button.configuration = .filled()
-        button.addTarget(self, action: #selector(openTapped), for: .touchUpInside)
+        button.addTarget(self,
+                         action: #selector(restartTapped),
+                         for: .touchUpInside)
         return button
     }()
 
     private lazy var stack: UIStackView = {
         let stack = UIStackView(arrangedSubviews: [
-            architectureControl, frameworkControl, lockLabel, openButton,
+            currentLabel,
+            architectureControl,
+            frameworkControl,
+            lockLabel,
+            restartButton,
         ])
         stack.axis = .vertical
         stack.spacing = Metrics.spacing
@@ -61,9 +78,11 @@ public final class FlowPickerViewController: UIViewController {
 
     // MARK: - Lifecycle
 
-    public init(engine: DependencyEngine = .shared, logger: LoggerInterface = OSLogger()) {
-        self.engine = engine
-        self.logger = logger
+    public init(currentStyle: FlowStyle,
+                onRestart: @escaping (FlowStyle) -> Void) {
+        self.currentStyle = currentStyle
+        self.onRestart = onRestart
+        self.selection = FlowSelection(style: currentStyle)
         super.init(nibName: nil, bundle: nil)
         title = AppStrings.FlowPicker.title
     }
@@ -74,7 +93,12 @@ public final class FlowPickerViewController: UIViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            systemItem: .close,
+            primaryAction: UIAction { [weak self] _ in self?.dismiss(animated: true) }
+        )
         setUpHierarchy()
+        currentLabel.text = AppStrings.FlowPicker.current(currentStyle.title)
         renderSelection()
     }
 
@@ -82,7 +106,8 @@ public final class FlowPickerViewController: UIViewController {
 
     private func setUpHierarchy() {
         view.addSubview(stack) {
-            $0.centerY(to: view).pinHorizontally(to: view, insets: .horizontal(Metrics.horizontalInset))
+            $0.top(to: view.safeAreaLayoutGuide.topAnchor, constant: Metrics.topInset)
+                .pinHorizontally(to: view.safeAreaLayoutGuide, insets: .horizontal(Metrics.horizontalInset))
         }
     }
 
@@ -95,7 +120,8 @@ public final class FlowPickerViewController: UIViewController {
         frameworkControl.isEnabled = selection.isUIFrameworkSelectable
         lockLabel.text = selection.lockReason
         lockLabel.isHidden = selection.lockReason == nil
-        openButton.setTitle(AppStrings.FlowPicker.open(selection.style.title), for: .normal)
+        restartButton.setTitle(AppStrings.FlowPicker.restart(selection.style.title), for: .normal)
+        restartButton.isEnabled = selection.style != currentStyle
     }
 
     @objc private func architectureChanged() {
@@ -106,22 +132,7 @@ public final class FlowPickerViewController: UIViewController {
         selection.select(UIFramework.allCases[frameworkControl.selectedSegmentIndex])
     }
 
-    @objc private func openTapped() {
-        FlowRegistration.register(selection.style, to: engine)
-
-        // a wiring bug, not a user error: loud in debug, a logged no-op in release
-        guard let module: ProductListInterface =
-                engine.resolve(ProductListInterface.self) else {
-            let message = "no ProductListInterface registered for \(selection.style)"
-            logger.error(message, category: .composition)
-            assertionFailure(message)
-            return
-        }
-
-        let navigationController = UINavigationController()
-        let root = module.createModule(navigationController: navigationController)
-        navigationController.setViewControllers([root], animated: false)
-        navigationController.modalPresentationStyle = .fullScreen
-        present(navigationController, animated: true)
+    @objc private func restartTapped() {
+        onRestart(selection.style)
     }
 }

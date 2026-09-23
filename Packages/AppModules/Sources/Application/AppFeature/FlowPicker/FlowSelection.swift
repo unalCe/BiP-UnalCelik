@@ -44,6 +44,14 @@ public struct FlowSelection: Equatable, Sendable {
         self.uiFramework = (architecture == .viper) ? .uiKit : uiFramework
     }
 
+    public init(style: FlowStyle) {
+        switch style {
+        case .mvvmUIKit: self.init(architecture: .mvvm, uiFramework: .uiKit)
+        case .mvvmSwiftUI: self.init(architecture: .mvvm, uiFramework: .swiftUI)
+        case .viperUIKit: self.init(architecture: .viper, uiFramework: .uiKit)
+        }
+    }
+
     public var isUIFrameworkSelectable: Bool { architecture == .mvvm }
 
     public var lockReason: String? {
