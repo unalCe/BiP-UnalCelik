@@ -1,61 +1,46 @@
-import XCTest
 import NetworkingKit
 import NetworkingKitMocks
+import TestSupport
+import XCTest
 
 /// Exercises the mock itself — downstream modules rely on its behaviour, so it
 /// deserves the same scrutiny as production code.
 final class MockHTTPClientTests: XCTestCase {
-    private let url = URL(string: "https://example.com/cart/list")!
+    private let request = HTTPRequest(url: URL(string: "https://example.com/cart/list")!)
+    private let body = Data(#"{"name":"Apple"}"#.utf8)
 
     func test_always_repeatsTheSameBehaviour() async throws {
-        let sut = MockHTTPClient(always: .ok(HTTPFixtures.productList))
+        let client = MockHTTPClient(always: .ok(body))
 
-        _ = try await sut.send(HTTPRequest(url: url))
-        let second = try await sut.send(HTTPRequest(url: url))
+        _ = try await client.send(request)
+        let second = try await client.send(request)
 
-        XCTAssertEqual(second.statusCode, 200)
-        XCTAssertEqual(sut.sendCount, 2)
+        XCTAssertEqual(second, HTTPResponse(statusCode: 200, body: body))
+        XCTAssertEqual(client.sendCount, 2)
     }
 
     func test_queue_answersInOrder() async throws {
-        let sut = MockHTTPClient(queue: [.status(403), .ok(HTTPFixtures.productDetail)])
+        let client = MockHTTPClient(queue: [.status(403), .ok(body)])
 
-        await XCTAssertThrowsErrorAsync(try await sut.send(HTTPRequest(url: url)))
-        let second = try await sut.send(HTTPRequest(url: url))
+        await XCTAssertThrowsErrorAsync(try await client.send(request))
+        let second = try await client.send(request)
 
-        XCTAssertEqual(second.body, HTTPFixtures.productDetail)
+        XCTAssertEqual(second.body, body)
     }
 
     func test_recordsRequests() async throws {
-        let sut = MockHTTPClient(always: .ok(Data()))
-        _ = try await sut.send(HTTPRequest(url: url, method: .get))
+        let client = MockHTTPClient(always: .ok(Data()))
 
-        XCTAssertEqual(sut.sentRequests.map(\.url), [url])
+        _ = try await client.send(request)
+
+        XCTAssertEqual(client.sentRequests, [request])
     }
 
     func test_offlineBehaviour_isRecognisedByNetworkError() async {
-        let sut = MockHTTPClient(always: .offline)
+        let client = MockHTTPClient(always: .offline)
 
-        do {
-            _ = try await sut.send(HTTPRequest(url: url))
-            XCTFail("expected a failure")
-        } catch let error as NetworkError {
-            XCTAssertTrue(error.isOffline)
-        } catch {
-            XCTFail("expected NetworkError, got \(error)")
+        await XCTAssertThrowsErrorAsync(try await client.send(request)) { error in
+            XCTAssertEqual((error as? NetworkError)?.isOffline, true, "got \(error)")
         }
-    }
-}
-
-func XCTAssertThrowsErrorAsync(
-    _ expression: @autoclosure () async throws -> some Any,
-    file: StaticString = #filePath,
-    line: UInt = #line
-) async {
-    do {
-        _ = try await expression()
-        XCTFail("expected an error", file: file, line: line)
-    } catch {
-        // expected
     }
 }

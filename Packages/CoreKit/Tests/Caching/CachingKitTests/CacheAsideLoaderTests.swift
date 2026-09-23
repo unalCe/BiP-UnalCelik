@@ -1,60 +1,85 @@
 import CachingKit
 import Foundation
 import LoggingKitMocks
+import TestSupport
 import XCTest
 
 final class CacheAsideLoaderTests: XCTestCase {
-    private let logger = SpyLogger()
+    private var loader: CacheAsideLoader!
+    private var source: MockCacheSource!
+    private var logger: SpyLogger!
+
     private let start = Date(timeIntervalSince1970: 1_000_000)
     private let maxAge: TimeInterval = 600
 
-    func test_freshEntry_answersWithoutFetching() async throws {
-        let sut = makeSUT(now: start.addingTimeInterval(maxAge - 1))
-        let source = Source(entry: CacheEntry(value: "cached", fetchedAt: start))
+    override func setUp() {
+        super.setUp()
+        source = .init()
+        reCreate(now: start)
+    }
 
-        let value = try await load(sut, from: source)
+    override func tearDown() {
+        loader = nil
+        source = nil
+        logger = nil
+        super.tearDown()
+    }
+
+    /// The clock is a parameter: freshness is decided by moving time, not by sleeping.
+    private func reCreate(now: Date) {
+        logger = SpyLogger()
+        loader = CacheAsideLoader(policy: FreshnessPolicy(maxAge: maxAge), logger: logger, now: { now })
+    }
+
+    private func load() async throws -> String {
+        try await loader.load(read: source.read, fetch: source.fetch, write: source.write)
+    }
+
+    func test_freshEntry_answersWithoutFetching() async throws {
+        source.stubbedReadResult = .success(CacheEntry(value: "cached", fetchedAt: start))
+        reCreate(now: start.addingTimeInterval(maxAge - 1))
+
+        let value = try await load()
 
         XCTAssertEqual(value, "cached")
-        XCTAssertEqual(source.fetches, 0)
+        XCTAssertFalse(source.invokedFetch)
+    }
+
+    func test_expiredEntry_fetches() async throws {
+        source.stubbedReadResult = .success(CacheEntry(value: "cached", fetchedAt: start))
+        reCreate(now: start.addingTimeInterval(maxAge))
+
+        let value = try await load()
+
+        XCTAssertEqual(value, "remote")
+        XCTAssertEqual(source.invokedFetchCount, 1)
     }
 
     func test_miss_fetchesAndWritesStampedWithTheClock() async throws {
         let now = start.addingTimeInterval(42)
-        let sut = makeSUT(now: now)
-        let source = Source(entry: nil)
+        reCreate(now: now)
 
-        let value = try await load(sut, from: source)
-
-        XCTAssertEqual(value, "remote")
-        XCTAssertEqual(source.fetches, 1)
-        XCTAssertEqual(source.writes.map(\.date), [now])
-    }
-
-    func test_expiredEntry_fetches() async throws {
-        let sut = makeSUT(now: start.addingTimeInterval(maxAge))
-        let source = Source(entry: CacheEntry(value: "cached", fetchedAt: start))
-
-        let value = try await load(sut, from: source)
+        let value = try await load()
 
         XCTAssertEqual(value, "remote")
-        XCTAssertEqual(source.fetches, 1)
+        XCTAssertEqual(source.invokedFetchCount, 1)
+        XCTAssertEqual(source.invokedWriteParameters?.value, "remote")
+        XCTAssertEqual(source.invokedWriteParameters?.date, now)
     }
 
     func test_readFailure_isLoggedAndTreatedAsAMiss() async throws {
-        let sut = makeSUT(now: start)
-        let source = Source(entry: nil, readFails: true)
+        source.stubbedReadResult = .failure(MockCacheSource.Failure())
 
-        let value = try await load(sut, from: source)
+        let value = try await load()
 
         XCTAssertEqual(value, "remote")
         XCTAssertTrue(logger.errors.contains { $0.message.contains("read failed") })
     }
 
     func test_writeFailure_isLoggedAndTheFetchedValueStillReturned() async throws {
-        let sut = makeSUT(now: start)
-        let source = Source(entry: nil, writeFails: true)
+        source.stubbedWriteError = MockCacheSource.Failure()
 
-        let value = try await load(sut, from: source)
+        let value = try await load()
 
         XCTAssertEqual(value, "remote")
         XCTAssertTrue(logger.errors.contains { $0.message.contains("write failed") })
@@ -62,70 +87,11 @@ final class CacheAsideLoaderTests: XCTestCase {
 
     func test_remoteFailure_propagatesAndNothingIsWritten() async {
         struct Offline: Error {}
-        let sut = makeSUT(now: start)
-        let source = Source(entry: nil, fetchError: Offline())
+        source.stubbedFetchResult = .failure(Offline())
 
-        do {
-            _ = try await load(sut, from: source)
-            XCTFail("expected the remote error")
-        } catch {
-            XCTAssertTrue(error is Offline)
+        await XCTAssertThrowsErrorAsync(try await load()) { error in
+            XCTAssertTrue(error is Offline, "got \(error)")
         }
-        XCTAssertTrue(source.writes.isEmpty)
-    }
-
-    func test_clockDecidesFreshness() async throws {
-        let source = Source(entry: CacheEntry(value: "cached", fetchedAt: start))
-
-        let early = try await load(makeSUT(now: start.addingTimeInterval(1)), from: source)
-        let late = try await load(makeSUT(now: start.addingTimeInterval(maxAge + 1)), from: source)
-
-        XCTAssertEqual(early, "cached")
-        XCTAssertEqual(late, "remote")
-    }
-
-    // MARK: - Helpers
-
-    private func makeSUT(now: Date) -> CacheAsideLoader {
-        CacheAsideLoader(policy: FreshnessPolicy(maxAge: maxAge), logger: logger, now: { now })
-    }
-
-    private func load(_ sut: CacheAsideLoader, from source: Source) async throws -> String {
-        try await sut.load(read: source.read, fetch: source.fetch, write: source.write)
-    }
-}
-
-private final class Source: @unchecked Sendable {
-    struct Failure: Error {}
-
-    private let entry: CacheEntry<String>?
-    private let readFails: Bool
-    private let writeFails: Bool
-    private let fetchError: Error?
-
-    private(set) var fetches = 0
-    private(set) var writes: [(value: String, date: Date)] = []
-
-    init(entry: CacheEntry<String>?, readFails: Bool = false, writeFails: Bool = false, fetchError: Error? = nil) {
-        self.entry = entry
-        self.readFails = readFails
-        self.writeFails = writeFails
-        self.fetchError = fetchError
-    }
-
-    func read() async throws -> CacheEntry<String>? {
-        if readFails { throw Failure() }
-        return entry
-    }
-
-    func fetch() async throws -> String {
-        fetches += 1
-        if let fetchError { throw fetchError }
-        return "remote"
-    }
-
-    func write(_ value: String, _ date: Date) async throws {
-        if writeFails { throw Failure() }
-        writes.append((value, date))
+        XCTAssertFalse(source.invokedWrite)
     }
 }
