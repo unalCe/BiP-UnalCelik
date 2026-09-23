@@ -1,5 +1,7 @@
 import CommonKit
+import TestSupport
 import XCTest
+
 @testable import AppFeature
 
 final class FlowPickerStringsTests: XCTestCase {
@@ -9,16 +11,10 @@ final class FlowPickerStringsTests: XCTestCase {
     }
 
     func test_noStringFallsBackToItsKey() {
-        let all = [
+        XCTAssertLocalized([
             AppStrings.FlowPicker.title, AppStrings.FlowPicker.restart("MVVM-C · UIKit"),
             AppStrings.FlowPicker.current("MVVM-C · UIKit"), AppStrings.FlowPicker.viperLockReason,
             AppStrings.FlowPicker.infoButton,
-        ]
-        for string in all {
-            XCTAssertNil(
-                string.range(of: #"^[a-z]+[A-Za-z]*\.[A-Za-z.]+"#, options: .regularExpression),
-                "\(string) looks like an unresolved key"
-            )
-        }
+        ])
     }
 }

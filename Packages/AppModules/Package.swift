@@ -13,6 +13,8 @@ let package = Package(
     products: [
         .library(name: "SharedDomain", targets: ["SharedDomain"]),
         .library(name: "ProductDomain", targets: ["ProductDomain"]),
+        .library(name: "ProductDomainMocks", targets: ["ProductDomainMocks"]),
+        .library(name: "ProductAPI", targets: ["ProductAPI"]),
         .library(name: "ProductRepositoryLive", targets: ["ProductRepositoryLive"]),
         .library(name: "ProductRepositoryMocks", targets: ["ProductRepositoryMocks"]),
 
@@ -48,13 +50,26 @@ let package = Package(
             dependencies: ["SharedDomain"],
             path: "Sources/Domain/ProductDomain"
         ),
+        .target(
+            name: "ProductDomainMocks",
+            dependencies: ["ProductDomain"],
+            path: "Tests/Domain/ProductDomainMocks"
+        ),
 
         // ── Data ─────────────────────────────────────────────────────────
+        // The wire format (DTOs + mapper) on its own, so the Live repository
+        // and the JSON fixtures in Mocks decode through the same code.
+        .target(
+            name: "ProductAPI",
+            dependencies: ["SharedDomain", "ProductDomain"],
+            path: "Sources/Data/ProductAPI"
+        ),
         .target(
             name: "ProductRepositoryLive",
             dependencies: [
                 "SharedDomain",
                 "ProductDomain",
+                "ProductAPI",
                 .product(name: "NetworkingKit", package: "CoreKit"),
                 .product(name: "PersistenceKit", package: "CoreKit"),
                 .product(name: "LoggingKit", package: "CoreKit"),
@@ -66,8 +81,9 @@ let package = Package(
         ),
         .target(
             name: "ProductRepositoryMocks",
-            dependencies: ["SharedDomain", "ProductDomain"],
-            path: "Sources/Data/ProductRepositoryMocks"
+            dependencies: ["SharedDomain", "ProductDomain", "ProductAPI"],
+            path: "Tests/Data/ProductRepositoryMocks",
+            resources: [.process("Resources")]
         ),
 
         // ── Shared ───────────────────────────────────────────────────────
@@ -205,21 +221,26 @@ let package = Package(
         ),
 
         // ── Tests ────────────────────────────────────────────────────────
-        .testTarget(
-            name: "ProductPresentationTests",
-            dependencies: ["ProductPresentation", "ProductDomain", "SharedDomain", "CommonKit"],
-            path: "Tests/Features/Product/ProductPresentationTests"
-        ),
+        // One target per module, logic only: view models, presenters,
+        // interactors, routers and the data layer. No view or layout tests.
         .testTarget(
             name: "ProductDomainTests",
-            dependencies: ["SharedDomain", "ProductDomain"],
+            dependencies: [
+                "SharedDomain", "ProductDomain", "ProductRepositoryMocks",
+                .product(name: "TestSupport", package: "CoreKit"),
+            ],
             path: "Tests/Domain/ProductDomainTests"
+        ),
+        .testTarget(
+            name: "ProductAPITests",
+            dependencies: ["SharedDomain", "ProductDomain", "ProductAPI", "ProductRepositoryMocks"],
+            path: "Tests/Data/ProductAPITests"
         ),
         .testTarget(
             name: "ProductRepositoryLiveTests",
             dependencies: [
                 "SharedDomain",
-                "ProductRepositoryLive", "ProductDomain",
+                "ProductRepositoryLive", "ProductDomain", "ProductRepositoryMocks",
                 .product(name: "DependencyEngine", package: "CoreKit"),
                 .product(name: "NetworkingKit", package: "CoreKit"),
                 .product(name: "NetworkingKitMocks", package: "CoreKit"),
@@ -228,71 +249,59 @@ let package = Package(
                 .product(name: "LoggingKit", package: "CoreKit"),
                 .product(name: "LoggingKitMocks", package: "CoreKit"),
                 .product(name: "CachingKit", package: "CoreKit"),
+                .product(name: "TestSupport", package: "CoreKit"),
             ],
             path: "Tests/Data/ProductRepositoryLiveTests"
         ),
         .testTarget(
-            name: "CommonUITests",
-            dependencies: [
-                "CommonUI",
-                .product(name: "ImageCacheKit", package: "CoreKit"),
-            ],
-            path: "Tests/Shared/CommonUITests"
-        ),
-        .testTarget(
             name: "CommonKitTests",
-            dependencies: ["SharedDomain", "CommonKit"],
+            dependencies: [
+                "SharedDomain", "CommonKit",
+                .product(name: "TestSupport", package: "CoreKit"),
+            ],
             path: "Tests/Shared/CommonKitTests"
         ),
         .testTarget(
-            name: "ProductListMVVMTests",
-            dependencies: ["SharedDomain", "ProductListMVVM", "ProductRepositoryMocks", "ProductDomain", "CommonKit"],
-            path: "Tests/Features/Product/ProductList/ProductListMVVMTests"
-        ),
-        .testTarget(
-            name: "ProductListMVVMUIKitTests",
+            name: "ProductPresentationTests",
             dependencies: [
-                "SharedDomain",
-                "ProductListMVVMUIKit", "ProductListMVVM", "ProductRepositoryMocks",
-                "ProductDomain", "CommonKit", "CommonUI",
-                .product(name: "ImageCacheKit", package: "CoreKit"),
-                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+                "ProductPresentation", "ProductDomain", "SharedDomain", "CommonKit", "ProductRepositoryMocks",
+                .product(name: "TestSupport", package: "CoreKit"),
             ],
-            path: "Tests/Features/Product/ProductList/ProductListMVVMUIKitTests"
+            path: "Tests/Features/Product/ProductPresentationTests"
         ),
         .testTarget(
-            name: "ProductListMVVMSwiftUITests",
-            dependencies: ["ProductListMVVMSwiftUI"],
-            path: "Tests/Features/Product/ProductList/ProductListMVVMSwiftUITests"
+            name: "ProductListMVVMTests",
+            dependencies: [
+                "SharedDomain", "ProductDomain", "ProductPresentation", "CommonKit",
+                "ProductListMVVM", "ProductDomainMocks", "ProductRepositoryMocks",
+            ],
+            path: "Tests/Features/Product/ProductList/ProductListMVVMTests"
         ),
         .testTarget(
             name: "ProductListVIPERTests",
             dependencies: [
-                "SharedDomain",
-                "ProductPresentation",
-                "ProductListVIPER", "ProductRepositoryMocks", "ProductDomain", "CommonKit", "CommonUI",
-                "ProductDetailInterface",
-                .product(name: "ImageCacheKit", package: "CoreKit"),
-                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+                "SharedDomain", "ProductDomain", "ProductPresentation", "CommonKit",
+                "ProductListVIPER", "ProductDetailInterface", "ProductDomainMocks", "ProductRepositoryMocks",
+                .product(name: "TestSupport", package: "CoreKit"),
             ],
             path: "Tests/Features/Product/ProductList/ProductListVIPERTests"
         ),
         .testTarget(
-            name: "ProductDetailMVVMUIKitTests",
+            name: "ProductDetailMVVMTests",
             dependencies: [
-                "SharedDomain",
-                "ProductPresentation",
-                "ProductDetailMVVMUIKit", "ProductDetailMVVM",
-                "ProductRepositoryMocks", "ProductDomain", "CommonKit",
-                .product(name: "ImageCacheKit", package: "CoreKit"),
-                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
+                "SharedDomain", "ProductDomain", "ProductPresentation", "CommonKit",
+                "ProductDetailMVVM", "ProductDomainMocks", "ProductRepositoryMocks",
             ],
-            path: "Tests/Features/Product/ProductDetail/ProductDetailMVVMUIKitTests"
+            path: "Tests/Features/Product/ProductDetail/ProductDetailMVVMTests"
         ),
         .testTarget(
-            name: "ProductDetailMVVMTests",
-            dependencies: ["SharedDomain", "ProductDetailMVVM", "ProductRepositoryMocks", "ProductDomain", "CommonKit"],
-            path: "Tests/Features/Product/ProductDetail/ProductDetailMVVMTests"
+            name: "ProductDetailVIPERTests",
+            dependencies: [
+                "SharedDomain", "ProductDomain", "ProductPresentation", "CommonKit",
+                "ProductDetailVIPER", "ProductDomainMocks", "ProductRepositoryMocks",
+                .product(name: "TestSupport", package: "CoreKit"),
+            ],
+            path: "Tests/Features/Product/ProductDetail/ProductDetailVIPERTests"
         ),
         .testTarget(
             name: "AppFeatureTests",
@@ -300,12 +309,11 @@ let package = Package(
                 "CommonKit",
                 "AppFeature", "ProductDomain", "ProductListInterface", "ProductDetailInterface",
                 .product(name: "DependencyEngine", package: "CoreKit"),
-                .product(name: "NetworkingKit", package: "CoreKit"),
                 .product(name: "NetworkingKitLive", package: "CoreKit"),
                 .product(name: "PersistenceKit", package: "CoreKit"),
-                .product(name: "ImageCacheKit", package: "CoreKit"),
                 .product(name: "ImageCacheKitLive", package: "CoreKit"),
                 .product(name: "LoggingKitMocks", package: "CoreKit"),
+                .product(name: "TestSupport", package: "CoreKit"),
             ],
             path: "Tests/Application/AppFeatureTests"
         ),

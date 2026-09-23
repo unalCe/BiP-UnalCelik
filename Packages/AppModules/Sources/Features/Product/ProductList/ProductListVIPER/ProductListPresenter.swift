@@ -18,7 +18,9 @@ public final class ProductListPresenter: ProductListPresenterInterface {
     private let errorPresenter: ErrorPresenter
 
     private var items: [ProductDisplayModel] = []
-    private var loadTask: Task<Void, Never>?
+    /// The load in flight. Internal so a test can `await loadTask?.value`
+    /// instead of sleeping until the state changes.
+    private(set) var loadTask: Task<Void, Never>?
 
     // MARK: - Lifecycle
 
@@ -49,15 +51,16 @@ public final class ProductListPresenter: ProductListPresenterInterface {
         loadTask?.cancel()
         view?.display(.loading)
 
-        loadTask = Task { [weak self] in
-            guard let self else { return }
+        // `self` is only re-acquired after the await, so a screen dismissed
+        // mid-request is released instead of kept alive by its own load
+        loadTask = Task { [weak self, interactor] in
             do {
-                let items = try await self.interactor.loadProducts()
-                guard !Task.isCancelled else { return }
+                let items = try await interactor.loadProducts()
+                guard let self, !Task.isCancelled else { return }
                 self.items = items
                 self.view?.display(items.isEmpty ? .empty : .loaded(items))
             } catch {
-                guard !Task.isCancelled else { return }
+                guard let self, !Task.isCancelled else { return }
                 self.view?.display(.failed(self.errorPresenter.display(for: error)))
             }
         }

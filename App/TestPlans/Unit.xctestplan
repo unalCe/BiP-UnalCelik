@@ -1,0 +1,162 @@
+{
+  "configurations" : [
+    {
+      "id" : "3F2B6C1E-8D4A-4E7B-9A51-6C0D2E8F4A17",
+      "name" : "Default",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : true,
+    "testExecutionOrdering" : "random"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/CoreKit",
+        "identifier" : "TestSupportTests",
+        "name" : "TestSupportTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/CoreKit",
+        "identifier" : "CachingKitTests",
+        "name" : "CachingKitTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/CoreKit",
+        "identifier" : "DependencyEngineTests",
+        "name" : "DependencyEngineTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/CoreKit",
+        "identifier" : "NetworkingKitTests",
+        "name" : "NetworkingKitTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/CoreKit",
+        "identifier" : "NetworkingKitLiveTests",
+        "name" : "NetworkingKitLiveTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/CoreKit",
+        "identifier" : "PersistenceKitLiveTests",
+        "name" : "PersistenceKitLiveTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/CoreKit",
+        "identifier" : "ImageCacheKitTests",
+        "name" : "ImageCacheKitTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/CoreKit",
+        "identifier" : "ImageCacheKitLiveTests",
+        "name" : "ImageCacheKitLiveTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "ProductDomainTests",
+        "name" : "ProductDomainTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "ProductAPITests",
+        "name" : "ProductAPITests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "ProductRepositoryLiveTests",
+        "name" : "ProductRepositoryLiveTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "CommonKitTests",
+        "name" : "CommonKitTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "ProductPresentationTests",
+        "name" : "ProductPresentationTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "ProductListMVVMTests",
+        "name" : "ProductListMVVMTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "ProductListVIPERTests",
+        "name" : "ProductListVIPERTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "ProductDetailMVVMTests",
+        "name" : "ProductDetailMVVMTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "ProductDetailVIPERTests",
+        "name" : "ProductDetailVIPERTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:..\/Packages\/AppModules",
+        "identifier" : "AppFeatureTests",
+        "name" : "AppFeatureTests"
+      }
+    }
+  ],
+  "version" : 1
+}

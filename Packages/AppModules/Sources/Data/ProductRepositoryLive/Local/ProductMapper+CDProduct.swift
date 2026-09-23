@@ -1,4 +1,5 @@
 import Foundation
+import ProductAPI
 import ProductDomain
 import SharedDomain
 

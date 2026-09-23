@@ -7,6 +7,10 @@ import PackageDescription
 // Per kit: XKit is protocols, XKitLive the implementation, XKitMocks the
 // stubs. Consumers depend on XKit, their tests on XKitMocks, and only the
 // app's registration links XKitLive.
+//
+// TestSupport is the one target that imports XCTest: assertions and helpers
+// shared by every test target in both packages. *Mocks never import XCTest,
+// so the app can reuse them for UI-test launch scenarios.
 let package = Package(
     name: "CoreKit",
     platforms: [.iOS(.v17)],
@@ -30,6 +34,8 @@ let package = Package(
         .library(name: "ImageCacheKit", targets: ["ImageCacheKit"]),
         .library(name: "ImageCacheKitLive", targets: ["ImageCacheKitLive"]),
         .library(name: "ImageCacheKitMocks", targets: ["ImageCacheKitMocks"]),
+
+        .library(name: "TestSupport", targets: ["TestSupport"]),
     ],
     targets: [
         .target(
@@ -56,7 +62,7 @@ let package = Package(
         .target(
             name: "LoggingKitMocks",
             dependencies: ["LoggingKit"],
-            path: "Sources/Logging/LoggingKitMocks"
+            path: "Tests/Logging/LoggingKitMocks"
         ),
 
         // ── Caching ──────────────────────────────────────────────────────
@@ -79,7 +85,7 @@ let package = Package(
         .target(
             name: "NetworkingKitMocks",
             dependencies: ["NetworkingKit"],
-            path: "Sources/Networking/NetworkingKitMocks"
+            path: "Tests/Networking/NetworkingKitMocks"
         ),
 
         // ── Persistence ──────────────────────────────────────────────────
@@ -106,13 +112,24 @@ let package = Package(
         .target(
             name: "ImageCacheKitMocks",
             dependencies: ["ImageCacheKit"],
-            path: "Sources/ImageLoading/ImageCacheKitMocks"
+            path: "Tests/ImageLoading/ImageCacheKitMocks"
+        ),
+
+        // ── Testing ──────────────────────────────────────────────────────
+        .target(
+            name: "TestSupport",
+            path: "Tests/Testing/TestSupport"
         ),
 
         // ── Tests ────────────────────────────────────────────────────────
         .testTarget(
+            name: "TestSupportTests",
+            dependencies: ["TestSupport"],
+            path: "Tests/Testing/TestSupportTests"
+        ),
+        .testTarget(
             name: "CachingKitTests",
-            dependencies: ["CachingKit", "LoggingKitMocks"],
+            dependencies: ["CachingKit", "LoggingKitMocks", "TestSupport"],
             path: "Tests/Caching/CachingKitTests"
         ),
         .testTarget(
@@ -121,29 +138,30 @@ let package = Package(
             path: "Tests/DependencyInjection/DependencyEngineTests"
         ),
         .testTarget(
-            name: "LayoutKitTests",
-            dependencies: ["LayoutKit"],
-            path: "Tests/Layout/LayoutKitTests"
-        ),
-        .testTarget(
             name: "NetworkingKitTests",
-            dependencies: ["NetworkingKit", "NetworkingKitMocks"],
+            dependencies: ["NetworkingKit", "NetworkingKitMocks", "TestSupport"],
             path: "Tests/Networking/NetworkingKitTests"
         ),
         .testTarget(
             name: "NetworkingKitLiveTests",
-            dependencies: ["NetworkingKitLive", "NetworkingKit", "NetworkingKitMocks"],
+            dependencies: ["NetworkingKitLive", "NetworkingKit", "NetworkingKitMocks", "TestSupport"],
             path: "Tests/Networking/NetworkingKitLiveTests"
         ),
         .testTarget(
             name: "PersistenceKitLiveTests",
-            dependencies: ["PersistenceKitLive", "PersistenceKit"],
+            dependencies: ["PersistenceKitLive", "PersistenceKit", "TestSupport"],
             path: "Tests/Persistence/PersistenceKitLiveTests"
+        ),
+        .testTarget(
+            name: "ImageCacheKitTests",
+            dependencies: ["ImageCacheKit"],
+            path: "Tests/ImageLoading/ImageCacheKitTests"
         ),
         .testTarget(
             name: "ImageCacheKitLiveTests",
             dependencies: [
                 "ImageCacheKitLive", "ImageCacheKit", "ImageCacheKitMocks", "NetworkingKit", "NetworkingKitMocks",
+                "TestSupport",
             ],
             path: "Tests/ImageLoading/ImageCacheKitLiveTests"
         ),

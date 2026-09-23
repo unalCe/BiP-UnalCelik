@@ -1,10 +1,11 @@
 import UIKit
 import XCTest
+
 @testable import AppFeature
 
 @MainActor
 final class ProductFlowCoordinatorTests: XCTestCase {
-    private var sut: ProductFlowCoordinator!
+    private var coordinator: ProductFlowCoordinator!
     private var navigationController: UINavigationController!
     private var list: MockProductListScreenFactory!
     private var detail: MockProductDetailScreenFactory!
@@ -15,7 +16,7 @@ final class ProductFlowCoordinatorTests: XCTestCase {
     }
 
     override func tearDown() {
-        sut = nil
+        coordinator = nil
         navigationController = nil
         list = nil
         detail = nil
@@ -25,19 +26,19 @@ final class ProductFlowCoordinatorTests: XCTestCase {
     private func reCreate() {
         list = MockProductListScreenFactory()
         detail = MockProductDetailScreenFactory()
-        sut = ProductFlowCoordinator(list: list, detail: detail)
-        navigationController = sut.navigationController
+        coordinator = ProductFlowCoordinator(list: list, detail: detail)
+        navigationController = coordinator.navigationController
     }
 
     func test_start_setsTheListAsRoot() {
-        sut.start()
+        coordinator.start()
 
         XCTAssertEqual(list.invokedMakeScreenCount, 1)
         XCTAssertEqual(navigationController.viewControllers, [list.stubbedMakeScreenResult])
     }
 
     func test_selectingAProduct_pushesItsDetail() {
-        sut.start()
+        coordinator.start()
 
         list.invokedMakeScreenParameters?.onSelectProduct("6_id_is_a_string")
 
@@ -47,7 +48,7 @@ final class ProductFlowCoordinatorTests: XCTestCase {
     }
 
     func test_finishingTheDetail_popsBackToTheList() {
-        sut.start()
+        coordinator.start()
         list.invokedMakeScreenParameters?.onSelectProduct("1")
 
         detail.invokedMakeScreenParameters?.onFinish()
@@ -58,10 +59,10 @@ final class ProductFlowCoordinatorTests: XCTestCase {
     /// Screens hold the coordinator weakly; an intent that outlives it is a no-op,
     /// not a crash or a retain cycle.
     func test_intentsAfterTheCoordinatorIsGone_doNothing() {
-        sut.start()
+        coordinator.start()
         let onSelectProduct = list.invokedMakeScreenParameters?.onSelectProduct
 
-        sut = nil
+        coordinator = nil
         onSelectProduct?("1")
 
         XCTAssertFalse(detail.invokedMakeScreen)

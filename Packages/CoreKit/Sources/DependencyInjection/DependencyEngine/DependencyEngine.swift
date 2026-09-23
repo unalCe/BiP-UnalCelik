@@ -7,6 +7,8 @@ public final class DependencyEngine: @unchecked Sendable {
     private let lock = NSLock()
     private var factories: [ObjectIdentifier: () -> Any] = [:]
     private var instances: [ObjectIdentifier: Any] = [:]
+    /// Interfaces registered with `registerFactory`, whose values are never cached.
+    private var unshared: Set<ObjectIdentifier> = []
 
     // MARK: - Lifecycle
 
@@ -20,6 +22,7 @@ public final class DependencyEngine: @unchecked Sendable {
         defer { lock.unlock() }
         factories[ObjectIdentifier(interface)] = value
         instances.removeValue(forKey: ObjectIdentifier(interface))
+        unshared.remove(ObjectIdentifier(interface))
     }
 
     /// New instance per resolve, for the rare dependency that mustn't be shared.
@@ -28,6 +31,7 @@ public final class DependencyEngine: @unchecked Sendable {
         defer { lock.unlock() }
         factories[ObjectIdentifier(interface)] = factory
         instances[ObjectIdentifier(interface)] = nil
+        unshared.insert(ObjectIdentifier(interface))
     }
 
     /// `nil` when unregistered, so callers decide whether that's fatal.
@@ -38,7 +42,7 @@ public final class DependencyEngine: @unchecked Sendable {
 
         if let existing = instances[key] as? Value { return existing }
         guard let value = factories[key]?() else { return nil }
-        instances[key] = value
+        if !unshared.contains(key) { instances[key] = value }
         return value as? Value
     }
 
@@ -47,6 +51,7 @@ public final class DependencyEngine: @unchecked Sendable {
         defer { lock.unlock() }
         factories.removeValue(forKey: ObjectIdentifier(interface))
         instances.removeValue(forKey: ObjectIdentifier(interface))
+        unshared.remove(ObjectIdentifier(interface))
     }
 
     public func reset() {
@@ -54,5 +59,6 @@ public final class DependencyEngine: @unchecked Sendable {
         defer { lock.unlock() }
         factories.removeAll()
         instances.removeAll()
+        unshared.removeAll()
     }
 }

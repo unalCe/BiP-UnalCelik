@@ -21,6 +21,9 @@ public final class ImagePrefetcher: ImagePrefetchingInterface, @unchecked Sendab
 
     // MARK: - Public Funcs
 
+    /// Downloads started and not yet finished or cancelled. Internal, for tests.
+    var inFlightCount: Int { lock.withLock { tasks.count } }
+
     public func prefetch(_ requests: [ImageRequest]) {
         for request in Set(requests) { start(request) }
     }

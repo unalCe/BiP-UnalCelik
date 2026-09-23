@@ -1,80 +1,110 @@
 import CommonKit
 import ProductDomain
+import ProductDomainMocks
+import ProductPresentation
 import ProductRepositoryMocks
-import Foundation
 import SharedDomain
 import XCTest
+
 @testable import ProductDetailMVVM
 
 @MainActor
 final class ProductDetailViewModelTests: XCTestCase {
-    func test_onAppear_loadsDescription() async {
-        let product = Product.fixture(
-            id: "1", name: "Apples", description: "An apple a day keeps the doctor away."
-        )
-        let sut = ProductDetailViewModel(
-            productID: "1",
-            fetchDetail: FetchProductDetail(
-                repository: StubProductRepository(detail: .success(product))
-            )
-        )
+    private var viewModel: ProductDetailViewModel!
+    private var fetchDetail: MockFetchProductDetailUseCase!
 
-        sut.onAppear()
-        await sut.settle()
+    /// `ProductDetailResponse.json`, through the real DTO and mapper.
+    private var product: Product { ProductFixture.detail() }
 
-        XCTAssertEqual(sut.state.value?.description, "An apple a day keeps the doctor away.")
+    override func setUp() {
+        super.setUp()
+        reCreate()
     }
 
-    func test_serverError_surfacesTheBackendsMessage() async {
-        let sut = ProductDetailViewModel(
-            productID: "999",
-            fetchDetail: FetchProductDetail(
-                repository: StubProductRepository(detail: .failure(DomainError.server(message: "Access Denied")))
-            )
-        )
-
-        sut.onAppear()
-        await sut.settle()
-
-        guard case .failed(let error) = sut.state else {
-            return XCTFail("expected failure, got \(sut.state)")
-        }
-        XCTAssertEqual(error.message, "Access Denied")
+    override func tearDown() {
+        viewModel = nil
+        fetchDetail = nil
+        super.tearDown()
     }
 
-    func test_requestsTheIDItWasGiven() async {
-        let repository = StubProductRepository()
-        let sut = ProductDetailViewModel(
-            productID: "6_id_is_a_string",
-            fetchDetail: FetchProductDetail(repository: repository)
-        )
-
-        sut.onAppear()
-        await sut.settle()
-
-        XCTAssertEqual(repository.requestedProductIDs, ["6_id_is_a_string"])
+    private func reCreate(productID: String = "1") {
+        fetchDetail = .init()
+        fetchDetail.stubbedExecuteResult = .success(product)
+        viewModel = ProductDetailViewModel(productID: productID, fetchDetail: fetchDetail)
     }
+
+    /// The view model loads in a `Task`; awaiting it is the whole wait — no sleeps.
+    private func appearAndWait() async {
+        viewModel.onAppear()
+        await viewModel.loadTask?.value
+    }
+
+    // MARK: - onAppear
+
+    func test_onAppear_showsLoading() {
+        XCTAssertEqual(viewModel.state, .idle)
+
+        viewModel.onAppear()
+
+        XCTAssertEqual(viewModel.state, .loading)
+    }
+
+    func test_onAppear_requestsTheIDItWasGiven() async {
+        reCreate(productID: "6_id_is_a_string")
+        XCTAssertFalse(fetchDetail.invokedExecute)
+
+        await appearAndWait()
+
+        XCTAssertEqual(fetchDetail.invokedExecuteCount, 1)
+        XCTAssertEqual(fetchDetail.invokedExecuteParameters?.id, "6_id_is_a_string")
+    }
+
+    func test_onAppear_withProduct_mapsItForDisplay() async {
+        await appearAndWait()
+
+        XCTAssertEqual(viewModel.state, .loaded(ProductDisplayMapper().map(product)))
+        XCTAssertEqual(viewModel.state.value?.description, "An apple a day keeps the doctor away.")
+    }
+
+    func test_onAppear_withServerError_showsTheBackendsMessage() async {
+        fetchDetail.stubbedExecuteResult = .failure(DomainError.server(message: "Access Denied"))
+
+        await appearAndWait()
+
+        XCTAssertEqual(viewModel.state.failure?.message, "Access Denied")
+    }
+
+    func test_onAppear_onceLoaded_doesNotLoadAgain() async {
+        await appearAndWait()
+
+        viewModel.onAppear()
+
+        XCTAssertEqual(fetchDetail.invokedExecuteCount, 1)
+    }
+
+    // MARK: - retry
+
+    func test_retry_loadsAgain() async {
+        fetchDetail.stubbedExecuteResult = .failure(DomainError.offline)
+        await appearAndWait()
+        fetchDetail.stubbedExecuteResult = .success(product)
+
+        viewModel.retry()
+        XCTAssertEqual(viewModel.state, .loading)
+        await viewModel.loadTask?.value
+
+        XCTAssertEqual(fetchDetail.invokedExecuteCount, 2)
+        XCTAssertNotNil(viewModel.state.value)
+    }
+
+    // MARK: - close
 
     func test_close_emitsFinish() {
-        let sut = ProductDetailViewModel(
-            productID: "1",
-            fetchDetail: FetchProductDetail(repository: StubProductRepository())
-        )
-        var finished = false
-        sut.onFinish = { finished = true }
+        var finishCount = 0
+        viewModel.onFinish = { finishCount += 1 }
 
-        sut.close()
+        viewModel.close()
 
-        XCTAssertTrue(finished)
-    }
-}
-
-@MainActor
-extension ProductDetailViewModel {
-    func settle() async {
-        let deadline = Date().addingTimeInterval(2)
-        while state.isLoading || state.isIdle, Date() < deadline {
-            try? await Task.sleep(for: .milliseconds(5))
-        }
+        XCTAssertEqual(finishCount, 1)
     }
 }

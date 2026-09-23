@@ -1,48 +1,63 @@
 import XCTest
+
 @testable import AppFeature
 
 final class FlowSelectionTests: XCTestCase {
+    private var selection: FlowSelection!
+
+    override func setUp() {
+        super.setUp()
+        selection = FlowSelection()
+    }
+
+    override func tearDown() {
+        selection = nil
+        super.tearDown()
+    }
+
     func test_defaultsToMVVMUIKit() {
-        XCTAssertEqual(FlowSelection().style, .mvvmUIKit)
+        XCTAssertEqual(selection.style, .mvvmUIKit)
     }
 
     func test_swiftUIUnderMVVM_isAllowed() {
-        var sut = FlowSelection()
-        sut.select(UIFramework.swiftUI)
-        XCTAssertEqual(sut.style, .mvvmSwiftUI)
+        selection.select(UIFramework.swiftUI)
+
+        XCTAssertEqual(selection.style, .mvvmSwiftUI)
     }
 
     func test_selectingVIPER_forcesUIKit() {
-        var sut = FlowSelection()
-        sut.select(UIFramework.swiftUI)
-        sut.select(ArchitectureStyle.viper)
+        selection.select(UIFramework.swiftUI)
 
-        XCTAssertEqual(sut.uiFramework, .uiKit)
-        XCTAssertEqual(sut.style, .viperUIKit)
+        selection.select(ArchitectureStyle.viper)
+
+        XCTAssertEqual(selection.uiFramework, .uiKit)
+        XCTAssertEqual(selection.style, .viperUIKit)
     }
 
     func test_whileVIPERSelected_frameworkIsLockedAndExplained() {
-        var sut = FlowSelection()
-        sut.select(ArchitectureStyle.viper)
+        selection.select(ArchitectureStyle.viper)
 
-        XCTAssertFalse(sut.isUIFrameworkSelectable)
-        XCTAssertNotNil(sut.lockReason)
+        XCTAssertFalse(selection.isUIFrameworkSelectable)
+        XCTAssertNotNil(selection.lockReason)
 
-        sut.select(UIFramework.swiftUI)  // ignored
-        XCTAssertEqual(sut.uiFramework, .uiKit)
+        selection.select(UIFramework.swiftUI)
+
+        XCTAssertEqual(selection.uiFramework, .uiKit, "a locked framework ignores the selection")
     }
 
     func test_returningToMVVM_unlocksFramework() {
-        var sut = FlowSelection()
-        sut.select(ArchitectureStyle.viper)
-        sut.select(ArchitectureStyle.mvvm)
+        selection.select(ArchitectureStyle.viper)
 
-        XCTAssertTrue(sut.isUIFrameworkSelectable)
-        XCTAssertNil(sut.lockReason)
+        selection.select(ArchitectureStyle.mvvm)
+
+        XCTAssertTrue(selection.isUIFrameworkSelectable)
+        XCTAssertNil(selection.lockReason)
     }
 
     func test_initRejectsIllegalCombination() {
-        XCTAssertEqual(FlowSelection(architecture: .viper, uiFramework: .swiftUI).uiFramework, .uiKit)
+        selection = FlowSelection(architecture: .viper, uiFramework: .swiftUI)
+
+        XCTAssertEqual(selection.uiFramework, .uiKit)
     }
 
     func test_initFromStyle_roundTrips() {
