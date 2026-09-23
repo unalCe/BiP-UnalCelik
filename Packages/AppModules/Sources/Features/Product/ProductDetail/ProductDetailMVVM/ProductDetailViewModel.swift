@@ -15,7 +15,9 @@ public final class ProductDetailViewModel: ObservableObject {
     private let mapper: ProductDisplayMapper
     private let errorPresenter: ErrorPresenter
 
-    private var loadTask: Task<Void, Never>?
+    /// The load in flight. Internal so a test can `await loadTask?.value`
+    /// instead of sleeping until the state changes.
+    private(set) var loadTask: Task<Void, Never>?
 
     // MARK: - Lifecycle
 
@@ -48,14 +50,15 @@ public final class ProductDetailViewModel: ObservableObject {
         loadTask?.cancel()
         state = .loading
 
-        loadTask = Task { [weak self] in
-            guard let self else { return }
+        // `self` is only re-acquired after the await, so a screen dismissed
+        // mid-request is released instead of kept alive by its own load
+        loadTask = Task { [weak self, fetchDetail, productID] in
             do {
-                let product = try await self.fetchDetail.execute(id: self.productID)
-                guard !Task.isCancelled else { return }
+                let product = try await fetchDetail.execute(id: productID)
+                guard let self, !Task.isCancelled else { return }
                 self.state = .loaded(self.mapper.map(product))
             } catch {
-                guard !Task.isCancelled else { return }
+                guard let self, !Task.isCancelled else { return }
                 self.state = .failed(self.errorPresenter.display(for: error))
             }
         }
