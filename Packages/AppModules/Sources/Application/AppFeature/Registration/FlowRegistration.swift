@@ -51,7 +51,11 @@ public enum FlowRegistration {
 
         case .viperUIKit:
             detail = VIPERProductDetailModule(fetchDetail: fetchDetail, imageLoader: imageLoader)
-            list = VIPERProductListModule(fetchProducts: fetchProducts)
+            list = VIPERProductListModule(
+                fetchProducts: fetchProducts,
+                imageLoader: imageLoader,
+                prefetcher: prefetcher
+            )
         }
 
         engine.register(value: detail, for: ProductDetailInterface.self)

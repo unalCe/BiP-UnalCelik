@@ -111,7 +111,7 @@ final class ProductListViewControllerTests: XCTestCase {
 
     // spacing used to come from item contentInsets, which stop separating rows
     // once the item self-sizes — the rows ended up touching
-    func test_cellsAreSeparatedAndInsetByTheGutter() async {
+    func test_cellsAreSeparatedAndPaddedByTheGridSpacing() async {
         let products = (1...4).map {
             Product(id: "\($0)", name: "Item \($0)", price: Money(minorUnits: 100), imageURL: nil)
         }
@@ -127,11 +127,11 @@ final class ProductListViewControllerTests: XCTestCase {
         let frames = grid.visibleCells.map(\.frame).sorted { ($0.minY, $0.minX) < ($1.minY, $1.minX) }
         guard frames.count == 4 else { return XCTFail("expected 4 cells, got \(frames.count)") }
 
-        let gutter = ProductListLayout.gutter
-        XCTAssertEqual(frames[0].minX, gutter, accuracy: 0.5, "leading margin")
-        XCTAssertEqual(grid.bounds.width - frames[1].maxX, gutter, accuracy: 0.5, "trailing margin")
-        XCTAssertEqual(frames[1].minX - frames[0].maxX, gutter, accuracy: 0.5, "column gap")
-        XCTAssertEqual(frames[2].minY - frames[0].maxY, gutter, accuracy: 0.5, "row gap")
+        let gridSpacing = ProductListLayout.gridSpacing
+        XCTAssertEqual(frames[0].minX, gridSpacing, accuracy: 0.5, "leading margin")
+        XCTAssertEqual(grid.bounds.width - frames[1].maxX, gridSpacing, accuracy: 0.5, "trailing margin")
+        XCTAssertEqual(frames[1].minX - frames[0].maxX, gridSpacing, accuracy: 0.5, "column gap")
+        XCTAssertEqual(frames[2].minY - frames[0].maxY, gridSpacing, accuracy: 0.5, "row gap")
         XCTAssertEqual(
             frames[0].width, ProductListLayout.itemWidth(in: grid.bounds.width), accuracy: 0.5
         )

@@ -2,10 +2,11 @@ import SwiftUI
 
 private enum Metrics {
     static let columns = 2
-    static let gutter: CGFloat = 16
+    /// Gap between cells, and the padding around the whole grid.
+    static let gridSpacing: CGFloat = 16
 
     static let gridColumns = Array(
-        repeating: GridItem(.flexible(), spacing: gutter),
+        repeating: GridItem(.flexible(), spacing: gridSpacing),
         count: columns
     )
 }
@@ -15,9 +16,9 @@ struct ProductGrid<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        LazyVGrid(columns: Metrics.gridColumns, spacing: Metrics.gutter) {
+        LazyVGrid(columns: Metrics.gridColumns, spacing: Metrics.gridSpacing) {
             content
         }
-        .padding(Metrics.gutter)
+        .padding(Metrics.gridSpacing)
     }
 }

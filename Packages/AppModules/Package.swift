@@ -133,6 +133,7 @@ let package = Package(
                 "ProductListInterface",
                 "ProductDetailInterface",   // the protocol, never an implementation
                 .product(name: "DependencyEngine", package: "CoreKit"),
+                .product(name: "ImageCacheKit", package: "CoreKit"),
             ],
             path: "Sources/Features/Product/ProductList/ProductListVIPER"
         ),
@@ -269,7 +270,10 @@ let package = Package(
             dependencies: [
                 "SharedDomain",
                 "ProductPresentation",
-                "ProductListVIPER", "ProductRepositoryMocks", "ProductDomain", "CommonKit", "ProductDetailInterface",
+                "ProductListVIPER", "ProductRepositoryMocks", "ProductDomain", "CommonKit", "CommonUI",
+                "ProductDetailInterface",
+                .product(name: "ImageCacheKit", package: "CoreKit"),
+                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
             ],
             path: "Tests/Features/Product/ProductList/ProductListVIPERTests"
         ),

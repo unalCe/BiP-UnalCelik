@@ -3,10 +3,10 @@ import XCTest
 @testable import ProductListMVVMSwiftUI
 
 /// The grid's numbers are private to it, so this holds what it draws: two
-/// columns with a 16pt gutter between and around them.
+/// columns with a 16pt spacing between and around them.
 @MainActor
 final class ProductGridTests: XCTestCase {
-    func test_rendersTwoColumnsLeavingTheGutters() {
+    func test_rendersTwoColumnsLeavingTheGridSpacing() {
         let containerWidth: CGFloat = 402
         let recorder = WidthRecorder()
         let host = UIHostingController(rootView: ProductGrid {

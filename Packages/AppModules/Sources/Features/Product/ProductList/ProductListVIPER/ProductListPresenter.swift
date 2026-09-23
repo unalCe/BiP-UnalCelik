@@ -31,9 +31,9 @@ public final class ProductListPresenter: ProductListPresenterInterface {
 
     public func didTapRetry() { load() }
 
-    public func didSelectItem(at index: Int) {
-        guard items.indices.contains(index) else { return }
-        router.routeToDetail(productID: items[index].id)
+    public func didSelectItem(id: String) {
+        guard items.contains(where: { $0.id == id }) else { return }
+        router.routeToDetail(productID: id)
     }
 
     // MARK: - Private Funcs
