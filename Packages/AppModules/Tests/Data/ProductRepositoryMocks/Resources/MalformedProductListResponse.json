@@ -1,1 +1,3 @@
-{ "products" : "not-an-array" }
+{
+  "products": "not-an-array"
+}
