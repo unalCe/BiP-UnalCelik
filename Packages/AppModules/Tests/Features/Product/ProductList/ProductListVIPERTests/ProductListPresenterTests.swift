@@ -55,15 +55,15 @@ final class ProductListPresenterTests: XCTestCase {
 
         sut.viewDidLoad()
         await view.settle()
-        sut.didSelectItem(at: 1)
+        sut.didSelectItem(id: "6_id_is_a_string")
 
         XCTAssertEqual(router.routedProductIDs, ["6_id_is_a_string"])
     }
 
-    func test_didSelectItem_outOfRange_doesNothing() {
+    func test_didSelectItem_unknownID_doesNothing() {
         let (sut, _, router) = makeSUT(repository: StubProductRepository())
 
-        sut.didSelectItem(at: 99)
+        sut.didSelectItem(id: "not_loaded")
 
         XCTAssertTrue(router.routedProductIDs.isEmpty)
     }

@@ -11,7 +11,7 @@ public protocol ProductListViewInterface: AnyObject {
 @MainActor
 public protocol ProductListPresenterInterface: AnyObject {
     func viewDidLoad()
-    func didSelectItem(at index: Int)
+    func didSelectItem(id: String)
     func didTapRetry()
 }
 
