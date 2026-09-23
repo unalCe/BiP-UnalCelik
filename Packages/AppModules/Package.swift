@@ -242,14 +242,6 @@ let package = Package(
             path: "Tests/Data/ProductRepositoryLiveTests"
         ),
         .testTarget(
-            name: "CommonUITests",
-            dependencies: [
-                "CommonUI",
-                .product(name: "ImageCacheKit", package: "CoreKit"),
-            ],
-            path: "Tests/Shared/CommonUITests"
-        ),
-        .testTarget(
             name: "CommonKitTests",
             dependencies: ["SharedDomain", "CommonKit"],
             path: "Tests/Shared/CommonKitTests"
@@ -258,22 +250,6 @@ let package = Package(
             name: "ProductListMVVMTests",
             dependencies: ["SharedDomain", "ProductListMVVM", "ProductRepositoryMocks", "ProductDomain", "CommonKit"],
             path: "Tests/Features/Product/ProductList/ProductListMVVMTests"
-        ),
-        .testTarget(
-            name: "ProductListMVVMUIKitTests",
-            dependencies: [
-                "SharedDomain",
-                "ProductListMVVMUIKit", "ProductListMVVM", "ProductRepositoryMocks",
-                "ProductDomain", "CommonKit", "CommonUI",
-                .product(name: "ImageCacheKit", package: "CoreKit"),
-                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
-            ],
-            path: "Tests/Features/Product/ProductList/ProductListMVVMUIKitTests"
-        ),
-        .testTarget(
-            name: "ProductListMVVMSwiftUITests",
-            dependencies: ["ProductListMVVMSwiftUI"],
-            path: "Tests/Features/Product/ProductList/ProductListMVVMSwiftUITests"
         ),
         .testTarget(
             name: "ProductListVIPERTests",
@@ -286,18 +262,6 @@ let package = Package(
                 .product(name: "ImageCacheKitMocks", package: "CoreKit"),
             ],
             path: "Tests/Features/Product/ProductList/ProductListVIPERTests"
-        ),
-        .testTarget(
-            name: "ProductDetailMVVMUIKitTests",
-            dependencies: [
-                "SharedDomain",
-                "ProductPresentation",
-                "ProductDetailMVVMUIKit", "ProductDetailMVVM",
-                "ProductRepositoryMocks", "ProductDomain", "CommonKit",
-                .product(name: "ImageCacheKit", package: "CoreKit"),
-                .product(name: "ImageCacheKitMocks", package: "CoreKit"),
-            ],
-            path: "Tests/Features/Product/ProductDetail/ProductDetailMVVMUIKitTests"
         ),
         .testTarget(
             name: "ProductDetailMVVMTests",
