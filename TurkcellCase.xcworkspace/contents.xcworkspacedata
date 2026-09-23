@@ -7,4 +7,7 @@
    <FileRef
       location = "group:Packages/AppModules">
    </FileRef>
+   <FileRef
+      location = "group:Packages/CoreKit">
+   </FileRef>
 </Workspace>

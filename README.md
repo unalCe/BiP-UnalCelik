@@ -283,6 +283,12 @@ These check the project without launching it — useful for confirming it is
 sound without opening Xcode.
 
 ```bash
+# All 193 unit tests (both packages) through the app scheme's Unit test plan.
+xcodebuild test -workspace TurkcellCase.xcworkspace -scheme TurkcellCase-UnalCelik \
+  -testPlan Unit -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+```
+
+```bash
 # 59 tests across 8 bundles.
 cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
@@ -300,7 +306,7 @@ xcodebuild -workspace TurkcellCase.xcworkspace -scheme TurkcellCase-UnalCelik \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 ```
 
-None of the three installs or runs the app — see **Running** above for that.
+None of these installs or runs the app — see **Running** above for that.
 
 ## Status
 

@@ -42,8 +42,7 @@ TurkcellCase.xcworkspace             ← open THIS, not the .xcodeproj
 App/                                 ← app-shaped targets ONLY
   TurkcellCase-UnalCelik.xcodeproj
   TurkcellCase-UnalCelik/            @main, Assets, Info.plist, entitlements
-  TurkcellCase-UnalCelikTests/
-  TurkcellCase-UnalCelikUITests/     (later: per-module demo apps live here too)
+  TestPlans/Unit.xctestplan          every package test target; the app scheme's Test action
 Packages/
   AppModules/   Package.swift · Sources/ · Tests/   ← this app's code
   CoreKit/      Package.swift · Sources/ · Tests/   ← reusable infrastructure
@@ -586,6 +585,7 @@ territory, planned separately.
 | A mock used by one target lives in its `Mocks/` folder; shared ones in a `*Mocks` module under `Tests/` | `ProductDomainMocks` (use cases), `ProductRepositoryMocks` (repository + fixtures), `NetworkingKitMocks`, `ImageCacheKitMocks`, `LoggingKitMocks`, and `TestSupport`. They are regular targets — a test target cannot depend on another test target — but their sources sit beside the tests, so `Sources/` holds only what ships |
 | Product data comes from captured API responses | `ProductFixture` decodes `Tests/Data/ProductRepositoryMocks/Resources/*.json` through the real `ProductAPI` DTOs and mapper, so fixtures cannot drift from the wire format |
 | Time is never the synchronisation mechanism | view models and presenters expose `loadTask` internally; tests `await loadTask?.value`. Held-open work uses `AsyncGate`; freshness moves a test clock |
+| One `Unit.xctestplan`, attached to the app scheme | ⌘U on `TurkcellCase-UnalCelik` runs every package test target in random order with coverage. The workspace references CoreKit too, so its test targets are visible to the plan |
 | `TestSupport` is the only target that imports XCTest | `XCTAssertThrowsErrorAsync`, `XCTAssertLocalized`, `AsyncGate`. `*Mocks` stay XCTest-free so UI-test launch scenarios can reuse them |
 
 Feature tests build against mocks, never implementations. So `URLSession` and
