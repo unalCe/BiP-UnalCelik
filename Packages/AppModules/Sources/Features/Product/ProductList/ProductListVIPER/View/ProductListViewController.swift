@@ -6,6 +6,12 @@ import ProductPresentation
 import UIKit
 
 @MainActor
+public protocol ProductListViewInterface: AnyObject {
+    var presenter: ProductListPresenterInterface? { get set }
+    func display(_ state: ViewState<[ProductDisplayModel]>)
+}
+
+@MainActor
 public final class ProductListViewController: UIViewController {
     private enum Section { case products }
 

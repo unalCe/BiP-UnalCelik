@@ -108,14 +108,15 @@ No third-party layout library. Insets are directional, so layouts mirror in RTL.
 | View | `UIViewController` | `struct View` | `UIViewController` + view protocol |
 | Logic | `ProductListViewModel` | **same type** | `Presenter` + `Interactor` |
 | Binding | `$state.sink` | `@ObservedObject` | `weak var view` |
-| Navigation | coordinator in `AppFeature` | coordinator + `NavigationPath` | `Router` inside the module |
+| Navigation | `ProductFlowCoordinator` in `AppFeature` | **same coordinator** (screens are hosted) | `Router` inside the module |
 
-Switching is a **re-registration** against one interface, not a `switch` in the
-composition root:
+Switching builds a new coordinator over the same core. MVVM screens only
+report intents (`onSelectProduct`, `onFinish`); the coordinator owns the stack:
 
 ```swift
-engine.register(value: MVVMUIKitProductListModule(…), for: ProductListInterface.self)
-engine.register(value: VIPERProductListModule(…),     for: ProductListInterface.self)
+case .mvvmUIKit:  ProductFlowCoordinator(list: MVVMUIKitProductListModule(…),  detail: MVVMUIKitProductDetailModule(…))
+case .mvvmSwiftUI: ProductFlowCoordinator(list: MVVMSwiftUIProductListModule(…), detail: MVVMSwiftUIProductDetailModule(…))
+case .viperUIKit: VIPERFlowCoordinator(list: VIPERProductListModule(…))   // routers navigate
 ```
 
 The repository and image cache are shared instances, so toggling mid-session
@@ -288,7 +289,7 @@ cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
 ```
 
 ```bash
-# 126 tests across 10 bundles, on a simulator.
+# 134 tests across 10 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -303,8 +304,8 @@ None of the three installs or runs the app — see **Running** above for that.
 
 ## Status
 
-List and detail both render on all three stacks; **185 unit tests green**
-(126 AppModules + 59 CoreKit). See ARCHITECTURE.md §9 for how they are laid
+List and detail both render on all three stacks; **193 unit tests green**
+(134 AppModules + 59 CoreKit). See ARCHITECTURE.md §9 for how they are laid
 out. Core Data and the image pipeline are real — no
 stand-ins left.
 

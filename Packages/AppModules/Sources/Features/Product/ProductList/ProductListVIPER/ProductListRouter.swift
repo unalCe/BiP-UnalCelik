@@ -3,6 +3,11 @@ import ProductDetailInterface
 import UIKit
 
 @MainActor
+public protocol ProductListRouterInterface: AnyObject {
+    func routeToDetail(productID: String)
+}
+
+@MainActor
 public final class ProductListRouter: ProductListRouterInterface {
     public weak var navigationController: UINavigationController?
 
