@@ -5,16 +5,16 @@ import PersistenceKit
 import ProductDomain
 
 public final class ProductRepository: ProductRepositoryInterface {
-    private let remote: any ProductRemoteDataSource
-    private let local: any ProductLocalDataSource
-    private let logger: any LoggerInterface
+    private let remote: ProductRemoteDataSource
+    private let local: ProductLocalDataSource
+    private let logger: LoggerInterface
     private let errorMapper: DomainErrorMapper
     private let timeToLive: TimeInterval
 
     init(
-        remote: any ProductRemoteDataSource,
-        local: any ProductLocalDataSource,
-        logger: any LoggerInterface,
+        remote: ProductRemoteDataSource,
+        local: ProductLocalDataSource,
+        logger: LoggerInterface,
         timeToLive: TimeInterval
     ) {
         self.remote = remote
@@ -25,10 +25,10 @@ public final class ProductRepository: ProductRepositoryInterface {
     }
 
     public convenience init(
-        client: any HTTPClientInterface,
-        container: any PersistentContainerInterface,
+        client: HTTPClientInterface,
+        container: PersistentContainerInterface,
         baseURL: URL,
-        logger: any LoggerInterface,
+        logger: LoggerInterface,
         timeToLive: TimeInterval
     ) {
         self.init(
@@ -49,7 +49,7 @@ public final class ProductRepository: ProductRepositoryInterface {
             await cache { try await local.saveListPage(fresh, at: Date()) }
             return fresh
         } catch {
-            throw errorMapper.map(error, for: .list)
+            throw errorMapper.map(error)
         }
     }
 
@@ -63,15 +63,11 @@ public final class ProductRepository: ProductRepositoryInterface {
             await cache { try await local.saveDetail(fresh, at: Date()) }
             return fresh
         } catch {
-            throw errorMapper.map(error, for: .detail(id: id))
+            throw errorMapper.map(error)
         }
     }
 
-    // MARK: - Cache policy
-
-    // The cache is best-effort, so neither failure reaches the user. A read
-    // that fails is a miss — the network is still the answer. A write that
-    // fails does not fail the request — the caller already holds fresh data.
+    //
 
     private func cachedOrMiss<Value>(
         _ read: () async throws -> Cached<Value>?

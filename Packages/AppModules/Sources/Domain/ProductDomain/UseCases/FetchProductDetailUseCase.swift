@@ -5,9 +5,9 @@ public protocol FetchProductDetailUseCase: Sendable {
 }
 
 public struct FetchProductDetail: FetchProductDetailUseCase {
-    private let repository: any ProductRepositoryInterface
+    private let repository: ProductRepositoryInterface
 
-    public init(repository: any ProductRepositoryInterface) {
+    public init(repository: ProductRepositoryInterface) {
         self.repository = repository
     }
 

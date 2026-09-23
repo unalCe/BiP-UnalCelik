@@ -9,7 +9,7 @@ public final class ProductListViewModel: ObservableObject {
 
     public var onSelectProduct: ((String) -> Void)?
 
-    private let fetchProducts: any FetchProductsUseCase
+    private let fetchProducts: FetchProductsUseCase
     private let mapper: ProductDisplayMapper
     private let errorPresenter: ErrorPresenter
 
@@ -17,7 +17,7 @@ public final class ProductListViewModel: ObservableObject {
     private var loadTask: Task<Void, Never>?
 
     public init(
-        fetchProducts: any FetchProductsUseCase,
+        fetchProducts: FetchProductsUseCase,
         mapper: ProductDisplayMapper = ProductDisplayMapper(),
         errorPresenter: ErrorPresenter = ErrorPresenter()
     ) {

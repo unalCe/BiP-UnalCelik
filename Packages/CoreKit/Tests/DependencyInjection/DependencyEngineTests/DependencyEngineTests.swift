@@ -8,16 +8,16 @@ private struct TurkishGreeter: GreeterInterface { func greet() -> String { "merh
 final class DependencyEngineTests: XCTestCase {
     func test_resolve_returnsRegisteredValue() {
         let engine = DependencyEngine()
-        engine.register(value: EnglishGreeter() as any GreeterInterface, for: (any GreeterInterface).self)
+        engine.register(value: EnglishGreeter() as GreeterInterface, for: GreeterInterface.self)
 
-        let resolved: (any GreeterInterface)? = engine.resolve((any GreeterInterface).self)
+        let resolved: GreeterInterface? = engine.resolve(GreeterInterface.self)
 
         XCTAssertEqual(resolved?.greet(), "hello")
     }
 
     func test_resolve_returnsNilWhenNothingRegistered() {
         let engine = DependencyEngine()
-        let resolved: (any GreeterInterface)? = engine.resolve((any GreeterInterface).self)
+        let resolved: GreeterInterface? = engine.resolve(GreeterInterface.self)
         XCTAssertNil(resolved)
     }
 
@@ -25,20 +25,20 @@ final class DependencyEngineTests: XCTestCase {
     /// interface swaps the implementation for every later resolution.
     func test_reregistering_replacesImplementation() {
         let engine = DependencyEngine()
-        engine.register(value: EnglishGreeter() as any GreeterInterface, for: (any GreeterInterface).self)
-        engine.register(value: TurkishGreeter() as any GreeterInterface, for: (any GreeterInterface).self)
+        engine.register(value: EnglishGreeter() as GreeterInterface, for: GreeterInterface.self)
+        engine.register(value: TurkishGreeter() as GreeterInterface, for: GreeterInterface.self)
 
-        let resolved: (any GreeterInterface)? = engine.resolve((any GreeterInterface).self)
+        let resolved: GreeterInterface? = engine.resolve(GreeterInterface.self)
 
         XCTAssertEqual(resolved?.greet(), "merhaba")
     }
 
     func test_unregister_removesImplementation() {
         let engine = DependencyEngine()
-        engine.register(value: EnglishGreeter() as any GreeterInterface, for: (any GreeterInterface).self)
-        engine.unregister((any GreeterInterface).self)
+        engine.register(value: EnglishGreeter() as GreeterInterface, for: GreeterInterface.self)
+        engine.unregister(GreeterInterface.self)
 
-        let resolved: (any GreeterInterface)? = engine.resolve((any GreeterInterface).self)
+        let resolved: GreeterInterface? = engine.resolve(GreeterInterface.self)
 
         XCTAssertNil(resolved)
     }
@@ -47,13 +47,13 @@ final class DependencyEngineTests: XCTestCase {
         let engine = DependencyEngine()
         var built = 0
         engine.register(
-            value: { built += 1; return EnglishGreeter() }() as any GreeterInterface,
-            for: (any GreeterInterface).self
+            value: { built += 1; return EnglishGreeter() }() as GreeterInterface,
+            for: GreeterInterface.self
         )
 
         XCTAssertEqual(built, 0, "registering must not construct the value")
 
-        let _: (any GreeterInterface)? = engine.resolve((any GreeterInterface).self)
+        let _: GreeterInterface? = engine.resolve(GreeterInterface.self)
         XCTAssertEqual(built, 1)
     }
 }
@@ -61,9 +61,9 @@ final class DependencyEngineTests: XCTestCase {
 final class DependencyPropertyWrapperTests: XCTestCase {
     func test_wrapper_resolvesFromEngine() {
         let engine = DependencyEngine()
-        engine.register(value: EnglishGreeter() as any GreeterInterface, for: (any GreeterInterface).self)
+        engine.register(value: EnglishGreeter() as GreeterInterface, for: GreeterInterface.self)
 
-        let dependency = Dependency<any GreeterInterface>(engine: engine)
+        let dependency = Dependency<GreeterInterface>(engine: engine)
 
         XCTAssertEqual(dependency.wrappedValue.greet(), "hello")
     }
@@ -72,9 +72,9 @@ final class DependencyPropertyWrapperTests: XCTestCase {
     /// shared state to exercise a type that uses @Dependency.
     func test_wrapper_prefersDirectlyInjectedValue() {
         let engine = DependencyEngine()
-        engine.register(value: EnglishGreeter() as any GreeterInterface, for: (any GreeterInterface).self)
+        engine.register(value: EnglishGreeter() as GreeterInterface, for: GreeterInterface.self)
 
-        let dependency = Dependency<any GreeterInterface>(
+        let dependency = Dependency<GreeterInterface>(
             wrappedValue: TurkishGreeter(),
             engine: engine
         )

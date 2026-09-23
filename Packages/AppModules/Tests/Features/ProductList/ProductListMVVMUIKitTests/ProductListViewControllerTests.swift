@@ -2,7 +2,6 @@ import CommonKit
 import ImageCacheKit
 import ImageCacheKitMocks
 import ProductDomain
-import ProductListInterface
 import ProductListMVVM
 @testable import ProductListMVVMUIKit
 import ProductRepositoryMocks
@@ -127,13 +126,13 @@ final class ProductListViewControllerTests: XCTestCase {
         let frames = grid.visibleCells.map(\.frame).sorted { ($0.minY, $0.minX) < ($1.minY, $1.minX) }
         guard frames.count == 4 else { return XCTFail("expected 4 cells, got \(frames.count)") }
 
-        let gutter = ProductListMetrics.gutter
+        let gutter = ProductListLayout.gutter
         XCTAssertEqual(frames[0].minX, gutter, accuracy: 0.5, "leading margin")
         XCTAssertEqual(grid.bounds.width - frames[1].maxX, gutter, accuracy: 0.5, "trailing margin")
         XCTAssertEqual(frames[1].minX - frames[0].maxX, gutter, accuracy: 0.5, "column gap")
         XCTAssertEqual(frames[2].minY - frames[0].maxY, gutter, accuracy: 0.5, "row gap")
         XCTAssertEqual(
-            frames[0].width, ProductListMetrics.itemWidth(in: grid.bounds.width), accuracy: 0.5
+            frames[0].width, ProductListLayout.itemWidth(in: grid.bounds.width), accuracy: 0.5
         )
     }
 

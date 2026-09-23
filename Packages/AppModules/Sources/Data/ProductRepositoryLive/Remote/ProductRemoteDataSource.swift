@@ -9,13 +9,13 @@ protocol ProductRemoteDataSource: Sendable {
 }
 
 struct HTTPProductRemoteDataSource: ProductRemoteDataSource {
-    private let client: any HTTPClientInterface
+    private let client: HTTPClientInterface
     private let baseURL: URL
-    private let logger: any LoggerInterface
+    private let logger: LoggerInterface
     private let errorMapper: DomainErrorMapper
     private let decoder = JSONDecoder()
 
-    init(client: any HTTPClientInterface, baseURL: URL, logger: any LoggerInterface) {
+    init(client: HTTPClientInterface, baseURL: URL, logger: LoggerInterface) {
         self.client = client
         self.baseURL = baseURL
         self.logger = logger
@@ -36,7 +36,7 @@ struct HTTPProductRemoteDataSource: ProductRemoteDataSource {
         do {
             return try await client.send(endpoint.makeRequest(baseURL: baseURL))
         } catch {
-            throw errorMapper.map(error, for: endpoint)
+            throw errorMapper.map(error)
         }
     }
 

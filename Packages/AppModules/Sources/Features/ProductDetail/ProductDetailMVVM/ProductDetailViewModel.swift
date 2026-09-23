@@ -10,7 +10,7 @@ public final class ProductDetailViewModel: ObservableObject {
     public var onFinish: (() -> Void)?
 
     private let productID: String
-    private let fetchDetail: any FetchProductDetailUseCase
+    private let fetchDetail: FetchProductDetailUseCase
     private let mapper: ProductDisplayMapper
     private let errorPresenter: ErrorPresenter
 
@@ -18,7 +18,7 @@ public final class ProductDetailViewModel: ObservableObject {
 
     public init(
         productID: String,
-        fetchDetail: any FetchProductDetailUseCase,
+        fetchDetail: FetchProductDetailUseCase,
         mapper: ProductDisplayMapper = ProductDisplayMapper(),
         errorPresenter: ErrorPresenter = ErrorPresenter()
     ) {

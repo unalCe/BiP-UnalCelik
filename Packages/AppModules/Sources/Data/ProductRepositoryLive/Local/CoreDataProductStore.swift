@@ -4,9 +4,9 @@ import PersistenceKit
 import ProductDomain
 
 struct CoreDataProductStore: ProductLocalDataSource {
-    private let container: any PersistentContainerInterface
+    private let container: PersistentContainerInterface
 
-    init(container: any PersistentContainerInterface) {
+    init(container: PersistentContainerInterface) {
         self.container = container
     }
 

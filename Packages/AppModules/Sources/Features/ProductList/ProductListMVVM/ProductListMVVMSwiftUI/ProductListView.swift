@@ -6,9 +6,9 @@ import SwiftUI
 
 public struct ProductListView: View {
     @ObservedObject private var viewModel: ProductListViewModel
-    private let imageLoader: any ImageLoaderInterface
+    private let imageLoader: ImageLoaderInterface
 
-    public init(viewModel: ProductListViewModel, imageLoader: any ImageLoaderInterface) {
+    public init(viewModel: ProductListViewModel, imageLoader: ImageLoaderInterface) {
         self.viewModel = viewModel
         self.imageLoader = imageLoader
     }

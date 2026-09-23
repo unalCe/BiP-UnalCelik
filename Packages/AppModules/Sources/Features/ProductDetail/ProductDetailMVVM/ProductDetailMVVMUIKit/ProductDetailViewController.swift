@@ -3,9 +3,19 @@ import CommonKit
 import CommonUI
 import ImageCacheKit
 import LayoutKit
-import ProductDetailInterface
 import ProductDetailMVVM
 import UIKit
+
+private enum Metrics {
+    static let imageAspectRatio: CGFloat = 1
+    /// Scaled with Dynamic Type relative to `.title2`.
+    static let titleFontSize: CGFloat = 22
+    static let horizontalInset: CGFloat = 16
+    static let imageSpacing: CGFloat = 16
+    /// Between the title and the price, and between them and the description.
+    static let textSpacing: CGFloat = 12
+    static let bottomInset: CGFloat = 24
+}
 
 @MainActor
 public final class ProductDetailViewController: UIViewController {
@@ -25,7 +35,7 @@ public final class ProductDetailViewController: UIViewController {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = UIFontMetrics(forTextStyle: .title2)
-            .scaledFont(for: .systemFont(ofSize: ProductDetailMetrics.titleFontSize, weight: .semibold))
+            .scaledFont(for: .systemFont(ofSize: Metrics.titleFontSize, weight: .semibold))
         label.numberOfLines = 0
         label.adjustsFontForContentSizeCategory = true
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -56,7 +66,7 @@ public final class ProductDetailViewController: UIViewController {
         let stack = UIStackView(arrangedSubviews: [titleLabel, priceLabel])
         stack.axis = .horizontal
         stack.alignment = .firstBaseline
-        stack.spacing = ProductDetailMetrics.textSpacing
+        stack.spacing = Metrics.textSpacing
         return stack
     }()
 
@@ -70,7 +80,7 @@ public final class ProductDetailViewController: UIViewController {
 
     private var cancellables = Set<AnyCancellable>()
 
-    public init(viewModel: ProductDetailViewModel, imageLoader: any ImageLoaderInterface) {
+    public init(viewModel: ProductDetailViewModel, imageLoader: ImageLoaderInterface) {
         self.viewModel = viewModel
         self.productImageView = CachedImageView(loader: imageLoader)
         super.init(nibName: nil, bundle: nil)
@@ -98,18 +108,18 @@ public final class ProductDetailViewController: UIViewController {
         contentView.addSubview(productImageView) {
             $0.top(to: contentView.topAnchor)
                 .pinHorizontally(to: contentView)
-                .aspectRatio(ProductDetailMetrics.imageAspectRatio)
+                .aspectRatio(Metrics.imageAspectRatio)
         }
 
         contentView.addSubview(headerStack) {
-            $0.below(productImageView, spacing: ProductDetailMetrics.imageSpacing)
-                .pinHorizontally(to: contentView, insets: .horizontal(ProductDetailMetrics.horizontalInset))
+            $0.below(productImageView, spacing: Metrics.imageSpacing)
+                .pinHorizontally(to: contentView, insets: .horizontal(Metrics.horizontalInset))
         }
 
         contentView.addSubview(descriptionLabel) {
-            $0.below(headerStack, spacing: ProductDetailMetrics.textSpacing)
-                .pinHorizontally(to: contentView, insets: .horizontal(ProductDetailMetrics.horizontalInset))
-                .bottom(to: contentView.bottomAnchor, constant: ProductDetailMetrics.bottomInset)
+            $0.below(headerStack, spacing: Metrics.textSpacing)
+                .pinHorizontally(to: contentView, insets: .horizontal(Metrics.horizontalInset))
+                .bottom(to: contentView.bottomAnchor, constant: Metrics.bottomInset)
         }
 
         view.addSubview(stateView, pinnedToEdges: .zero)
@@ -136,7 +146,7 @@ public final class ProductDetailViewController: UIViewController {
         case .empty:
             stateView.showMessage(AppStrings.ProductDetail.emptyTitle, retryable: false)
         case .failed(let error):
-            stateView.showMessage("\(error.title)\n\(error.message)", retryable: error.isRetryable)
+            stateView.showMessage("\(error.title)\n\(error.message)", retryable: true)
         }
     }
 

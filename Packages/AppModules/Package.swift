@@ -221,7 +221,7 @@ let package = Package(
         .testTarget(
             name: "ProductListMVVMUIKitTests",
             dependencies: [
-                "ProductListMVVMUIKit", "ProductListMVVM", "ProductListInterface", "ProductRepositoryMocks",
+                "ProductListMVVMUIKit", "ProductListMVVM", "ProductRepositoryMocks",
                 "ProductDomain", "CommonKit", "CommonUI",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
                 .product(name: "ImageCacheKitMocks", package: "CoreKit"),
@@ -232,7 +232,7 @@ let package = Package(
             name: "ProductListMVVMSwiftUITests",
             dependencies: [
                 "ProductListMVVMSwiftUI", "ProductListMVVMUIKit", "ProductListMVVM",
-                "ProductListInterface", "ProductRepositoryMocks", "ProductDomain", "CommonKit",
+                "ProductRepositoryMocks", "ProductDomain", "CommonKit",
                 .product(name: "ImageCacheKitMocks", package: "CoreKit"),
             ],
             path: "Tests/Features/ProductList/ProductListMVVMSwiftUITests"
@@ -247,7 +247,7 @@ let package = Package(
         .testTarget(
             name: "ProductDetailMVVMUIKitTests",
             dependencies: [
-                "ProductDetailMVVMUIKit", "ProductDetailMVVM", "ProductDetailInterface",
+                "ProductDetailMVVMUIKit", "ProductDetailMVVM",
                 "ProductRepositoryMocks", "ProductDomain", "CommonKit",
                 .product(name: "ImageCacheKit", package: "CoreKit"),
                 .product(name: "ImageCacheKitMocks", package: "CoreKit"),

@@ -6,7 +6,7 @@ import UIKit
 // TODO: collection view mirroring the MVVM screen
 @MainActor
 public final class ProductListViewController: UIViewController, ProductListViewInterface {
-    public var presenter: (any ProductListPresenterInterface)?
+    public var presenter: ProductListPresenterInterface?
 
     private lazy var stateView: StateContainerView = {
         let view = StateContainerView()
@@ -47,7 +47,7 @@ public final class ProductListViewController: UIViewController, ProductListViewI
         case .empty:
             stateView.showMessage(AppStrings.ProductList.emptyTitle, retryable: true)
         case .failed(let error):
-            stateView.showMessage("\(error.title)\n\(error.message)", retryable: error.isRetryable)
+            stateView.showMessage("\(error.title)\n\(error.message)", retryable: true)
         }
     }
 }

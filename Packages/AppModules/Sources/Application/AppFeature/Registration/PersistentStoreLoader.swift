@@ -7,12 +7,12 @@ import PersistenceKit
 /// to crash — that is what makes "no migration needed" true. Each rung is
 /// logged, and the bottom one cannot fail.
 struct PersistentStoreLoader {
-    var openOnDisk: () throws -> any PersistentContainerInterface
+    var openOnDisk: () throws -> PersistentContainerInterface
     var destroyOnDisk: () throws -> Void
-    var openInMemory: () throws -> any PersistentContainerInterface
-    var logger: any LoggerInterface
+    var openInMemory: () throws -> PersistentContainerInterface
+    var logger: LoggerInterface
 
-    func load() -> any PersistentContainerInterface {
+    func load() -> PersistentContainerInterface {
         do {
             return try openOnDisk()
         } catch {

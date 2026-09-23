@@ -113,8 +113,8 @@ Switching is a **re-registration** against one interface, not a `switch` in the
 composition root:
 
 ```swift
-engine.register(value: MVVMUIKitProductListModule(…), for: (any ProductListInterface).self)
-engine.register(value: VIPERProductListModule(…),     for: (any ProductListInterface).self)
+engine.register(value: MVVMUIKitProductListModule(…), for: ProductListInterface.self)
+engine.register(value: VIPERProductListModule(…),     for: ProductListInterface.self)
 ```
 
 The repository and image cache are shared instances, so toggling mid-session
@@ -233,6 +233,7 @@ data layer.
 | Cache read fails | logged, treated as a miss — the network answers |
 | Cache write fails | logged; the request still succeeds with the fresh data |
 | Store will not open | destroyed and reopened; if that fails, the session runs in memory |
+| Backend refuses a request | its own error message is shown; without one, the generic error |
 | Image fails to load | shimmer stops, a placeholder shows, VoiceOver reads "Image unavailable" |
 | A flow module is not registered | logged and `assertionFailure` — never a dead button |
 
@@ -268,8 +269,8 @@ Verified against the endpoints, not assumed:
 - **Prices are integers in minor units** — `9` is 0.09, `557` is 5.57. Held as
   `Money(minorUnits:)`, never `Double`.
 - **An unknown id returns HTTP 403, not 404** — the S3 bucket denies listing,
-  so on **detail** `DomainErrorMapper` maps both to `.notFound`. On the list a
-  403 names no product; it is an access failure and shows the generic error.
+  and the body says `<Message>Access Denied</Message>`. That text is shown as
+  it is; no status code is given a meaning of ours.
 - **No currency field** — the domain assumes USD in `Money`; the store has no
   default of its own.
 
@@ -285,7 +286,7 @@ cd Packages/CoreKit && xcodebuild -scheme CoreKit-Package \
 ```
 
 ```bash
-# 105 tests across 11 bundles, on a simulator.
+# 101 tests across 11 bundles, on a simulator.
 cd Packages/AppModules && xcodebuild -scheme AppModules-Package \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
@@ -300,7 +301,7 @@ None of the three installs or runs the app — see **Running** above for that.
 
 ## Status
 
-List and detail both render on all three stacks; **142 tests green** (105
+List and detail both render on all three stacks; **138 tests green** (101
 AppModules + 37 CoreKit). Core Data and the image pipeline are real — no
 stand-ins left.
 

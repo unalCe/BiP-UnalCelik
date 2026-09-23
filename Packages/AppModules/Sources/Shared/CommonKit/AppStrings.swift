@@ -17,16 +17,6 @@ public enum AppStrings {
     }
 
     public enum Error {
-        public static var notFoundTitle: String {
-            String(localized: "error.notFound.title", bundle: .module,
-                   comment: "Error title: the requested product does not exist")
-        }
-
-        public static var notFoundMessage: String {
-            String(localized: "error.notFound.message", bundle: .module,
-                   comment: "Error message under the product-not-found title")
-        }
-
         public static var offlineTitle: String {
             String(localized: "error.offline.title", bundle: .module,
                    comment: "Error title: the device has no network connection")

@@ -1,9 +1,8 @@
 import Foundation
 
 public enum DomainError: Error, Equatable, Sendable {
-    /// Also covers 403 — the bucket denies listing, so unknown ids come back
-    /// AccessDenied rather than 404.
-    case notFound
+    /// The backend refused the request and said why; `message` is its own text.
+    case server(message: String)
     case offline
     case invalidData
     case unknown

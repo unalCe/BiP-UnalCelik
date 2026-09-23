@@ -3,15 +3,15 @@ import NetworkingKit
 import UIKit
 
 public final class ImageLoader: ImageLoaderInterface, Sendable {
-    private let client: any HTTPClientInterface
-    private let cache: any DecodedImageCaching
-    private let downsampler: any ImageDownsampling
+    private let client: HTTPClientInterface
+    private let cache: DecodedImageCaching
+    private let downsampler: ImageDownsampling
     private let registry = InFlightRegistry()
 
     init(
-        client: any HTTPClientInterface,
-        cache: any DecodedImageCaching,
-        downsampler: any ImageDownsampling
+        client: HTTPClientInterface,
+        cache: DecodedImageCaching,
+        downsampler: ImageDownsampling
     ) {
         self.client = client
         self.cache = cache
@@ -19,7 +19,7 @@ public final class ImageLoader: ImageLoaderInterface, Sendable {
     }
 
     public convenience init(
-        client: any HTTPClientInterface,
+        client: HTTPClientInterface,
         configuration: ImageCacheConfiguration = ImageCacheConfiguration()
     ) {
         self.init(

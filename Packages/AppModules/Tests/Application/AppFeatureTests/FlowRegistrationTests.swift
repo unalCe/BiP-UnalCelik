@@ -21,10 +21,10 @@ final class FlowRegistrationTests: XCTestCase {
 
             FlowRegistration.register(style, to: engine)
 
-            let list: (any ProductListInterface)? =
-                engine.resolve((any ProductListInterface).self)
-            let detail: (any ProductDetailInterface)? =
-                engine.resolve((any ProductDetailInterface).self)
+            let list: ProductListInterface? =
+                engine.resolve(ProductListInterface.self)
+            let detail: ProductDetailInterface? =
+                engine.resolve(ProductDetailInterface.self)
 
             XCTAssertNotNil(list, "no list module for \(style)")
             XCTAssertNotNil(detail, "no detail module for \(style)")
@@ -39,14 +39,14 @@ final class FlowRegistrationTests: XCTestCase {
     /// visible proof the core is untouched by the choice above it.
     func test_switchingStyle_keepsTheSameRepositoryInstance() {
         let engine = makeBootstrappedEngine()
-        let before: (any ProductRepositoryInterface)? =
-            engine.resolve((any ProductRepositoryInterface).self)
+        let before: ProductRepositoryInterface? =
+            engine.resolve(ProductRepositoryInterface.self)
 
         FlowRegistration.register(.mvvmUIKit, to: engine)
         FlowRegistration.register(.viperUIKit, to: engine)
 
-        let after: (any ProductRepositoryInterface)? =
-            engine.resolve((any ProductRepositoryInterface).self)
+        let after: ProductRepositoryInterface? =
+            engine.resolve(ProductRepositoryInterface.self)
 
         XCTAssertTrue(
             (before as AnyObject) === (after as AnyObject),

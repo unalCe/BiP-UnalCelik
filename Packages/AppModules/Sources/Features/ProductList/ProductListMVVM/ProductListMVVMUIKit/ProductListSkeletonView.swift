@@ -1,5 +1,4 @@
 import CommonUI
-import ProductListInterface
 import UIKit
 
 /// Placeholder grid for the loading state, laid out from `ProductListLayout` so
@@ -79,8 +78,8 @@ final class ProductListSkeletonView: UIView {
         for placeholder in placeholders {
             path.addRoundedRect(
                 in: placeholder.image,
-                cornerWidth: ProductListMetrics.imageCornerRadius,
-                cornerHeight: ProductListMetrics.imageCornerRadius
+                cornerWidth: ProductListLayout.imageCornerRadius,
+                cornerHeight: ProductListLayout.imageCornerRadius
             )
             for text in [placeholder.title, placeholder.price] {
                 path.addRoundedRect(
@@ -101,8 +100,8 @@ final class ProductListSkeletonView: UIView {
     static func placeholders(in rect: CGRect) -> [Placeholder] {
         guard rect.width > 0 else { return [] }
 
-        let gutter = ProductListMetrics.gutter
-        let width = ProductListMetrics.itemWidth(in: rect.width)
+        let gutter = ProductListLayout.gutter
+        let width = ProductListLayout.itemWidth(in: rect.width)
         let height = ProductListLayout.cellHeight(itemWidth: width)
         let titleHeight = ProductListLayout.titleFont.lineHeight
         let priceHeight = ProductListLayout.priceFont.lineHeight
@@ -110,9 +109,9 @@ final class ProductListSkeletonView: UIView {
         var result: [Placeholder] = []
         var y = rect.minY + gutter
         while y < rect.maxY {
-            for column in 0..<ProductListMetrics.columns {
+            for column in 0..<ProductListLayout.columns {
                 let x = rect.minX + gutter + CGFloat(column) * (width + gutter)
-                let titleY = y + width + ProductListMetrics.titleSpacing
+                let titleY = y + width + ProductListLayout.titleSpacing
 
                 result.append(
                     Placeholder(
@@ -121,7 +120,7 @@ final class ProductListSkeletonView: UIView {
                             x: x, y: titleY, width: width * titleWidthFraction, height: titleHeight
                         ),
                         price: CGRect(
-                            x: x, y: titleY + titleHeight + ProductListMetrics.priceSpacing,
+                            x: x, y: titleY + titleHeight + ProductListLayout.priceSpacing,
                             width: width * priceWidthFraction, height: priceHeight
                         )
                     )

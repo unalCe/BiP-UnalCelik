@@ -10,11 +10,11 @@ public final class CachedImageView: UIImageView {
     private var loadTask: Task<Void, Never>?
     private var pendingURL: URL?
     private var currentRequest: ImageRequest?
-    private let loader: any ImageLoaderInterface
+    private let loader: ImageLoaderInterface
     private let shimmer = ShimmerSweep()
     private var wantsShimmer = false
 
-    public init(loader: any ImageLoaderInterface) {
+    public init(loader: ImageLoaderInterface) {
         self.loader = loader
         super.init(frame: .zero)
         contentMode = .scaleAspectFill

@@ -15,7 +15,7 @@ final class NSCacheImageCache: DecodedImageCaching, @unchecked Sendable {
     }
 
     private let storage = NSCache<Key, UIImage>()
-    private var memoryWarningObserver: (any NSObjectProtocol)?
+    private var memoryWarningObserver: NSObjectProtocol?
 
     init(_ configuration: ImageCacheConfiguration) {
         storage.totalCostLimit = configuration.totalCostLimit

@@ -1,12 +1,21 @@
 import CommonKit
 import CommonUI
 import ImageCacheKit
-import ProductListInterface
 import SwiftUI
+
+private enum Metrics {
+    static let imageCornerRadius: CGFloat = 8
+    static let titleSpacing: CGFloat = 8
+    static let priceSpacing: CGFloat = 4
+
+    // text rarely fills its line, so neither do the placeholders for it
+    static let skeletonTitleWidthFraction: CGFloat = 0.85
+    static let skeletonPriceWidthFraction: CGFloat = 0.4
+}
 
 struct ProductCell: View {
     let item: ProductDisplayModel
-    let imageLoader: any ImageLoaderInterface
+    let imageLoader: ImageLoaderInterface
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -15,7 +24,7 @@ struct ProductCell: View {
                 .overlay { CachedImage(url: item.imageURL, loader: imageLoader) }
                 .clipShape(
                     RoundedRectangle(
-                        cornerRadius: ProductListMetrics.imageCornerRadius,
+                        cornerRadius: Metrics.imageCornerRadius,
                         style: .continuous
                     )
                 )
@@ -23,9 +32,9 @@ struct ProductCell: View {
             Text(item.title)
                 .font(.subheadline)
                 .lineLimit(2)
-                .padding(.top, ProductListMetrics.titleSpacing)
+                .padding(.top, Metrics.titleSpacing)
 
-            Spacer(minLength: ProductListMetrics.priceSpacing)
+            Spacer(minLength: Metrics.priceSpacing)
 
             Text(item.formattedPrice)
                 .font(.footnote)
@@ -40,15 +49,15 @@ struct ProductCell: View {
 struct ProductCellSkeleton: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SkeletonBox(cornerRadius: ProductListMetrics.imageCornerRadius)
+            SkeletonBox(cornerRadius: Metrics.imageCornerRadius)
                 .aspectRatio(1, contentMode: .fit)
 
-            SkeletonLine(.subheadline, widthFraction: ProductGridMetrics.skeletonTitleWidthFraction)
-                .padding(.top, ProductListMetrics.titleSpacing)
+            SkeletonLine(.subheadline, widthFraction: Metrics.skeletonTitleWidthFraction)
+                .padding(.top, Metrics.titleSpacing)
 
-            Spacer(minLength: ProductListMetrics.priceSpacing)
+            Spacer(minLength: Metrics.priceSpacing)
 
-            SkeletonLine(.footnote, widthFraction: ProductGridMetrics.skeletonPriceWidthFraction)
+            SkeletonLine(.footnote, widthFraction: Metrics.skeletonPriceWidthFraction)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

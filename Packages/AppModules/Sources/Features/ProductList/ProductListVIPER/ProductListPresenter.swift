@@ -3,18 +3,18 @@ import Foundation
 
 @MainActor
 public final class ProductListPresenter: ProductListPresenterInterface {
-    public weak var view: (any ProductListViewInterface)?
+    public weak var view: ProductListViewInterface?
 
-    private let interactor: any ProductListInteractorInterface
-    private let router: any ProductListRouterInterface
+    private let interactor: ProductListInteractorInterface
+    private let router: ProductListRouterInterface
     private let errorPresenter: ErrorPresenter
 
     private var items: [ProductDisplayModel] = []
     private var loadTask: Task<Void, Never>?
 
     public init(
-        interactor: any ProductListInteractorInterface,
-        router: any ProductListRouterInterface,
+        interactor: ProductListInteractorInterface,
+        router: ProductListRouterInterface,
         errorPresenter: ErrorPresenter = ErrorPresenter()
     ) {
         self.interactor = interactor

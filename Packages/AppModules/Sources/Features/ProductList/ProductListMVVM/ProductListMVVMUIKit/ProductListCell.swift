@@ -2,7 +2,6 @@ import CommonKit
 import CommonUI
 import ImageCacheKit
 import LayoutKit
-import ProductListInterface
 import UIKit
 
 @MainActor
@@ -24,7 +23,7 @@ public final class ProductListCell: UICollectionViewCell {
     private var productImageView: CachedImageView?
 
     public func configure(with item: ProductDisplayModel,
-                          imageLoader: any ImageLoaderInterface) {
+                          imageLoader: ImageLoaderInterface) {
         titleLabel.text = item.title
         priceLabel.text = item.formattedPrice
         imageView(using: imageLoader).setImage(from: item.imageURL)
@@ -39,11 +38,11 @@ public final class ProductListCell: UICollectionViewCell {
         priceLabel.text = nil
     }
 
-    private func imageView(using loader: any ImageLoaderInterface) -> CachedImageView {
+    private func imageView(using loader: ImageLoaderInterface) -> CachedImageView {
         if let productImageView { return productImageView }
 
         let imageView = CachedImageView(loader: loader)
-        imageView.layer.cornerRadius = ProductListMetrics.imageCornerRadius
+        imageView.layer.cornerRadius = ProductListLayout.imageCornerRadius
         imageView.layer.cornerCurve = .continuous
         productImageView = imageView
         setUpHierarchy(with: imageView)
@@ -58,12 +57,12 @@ public final class ProductListCell: UICollectionViewCell {
         }
 
         contentView.addSubview(titleLabel) {
-            $0.below(imageView, spacing: ProductListMetrics.titleSpacing)
+            $0.below(imageView, spacing: ProductListLayout.titleSpacing)
                 .pinHorizontally(to: contentView)
         }
 
         contentView.addSubview(priceLabel) {
-            $0.below(titleLabel, spacing: ProductListMetrics.priceSpacing)
+            $0.below(titleLabel, spacing: ProductListLayout.priceSpacing)
                 .pinHorizontally(to: contentView)
                 .bottom(to: contentView.bottomAnchor)
         }

@@ -11,9 +11,9 @@ import ProductDomain
 public enum ProductRepositoryDependencyRegistration {
     public static func register(to engine: DependencyEngine, baseURL: URL, timeToLive: TimeInterval) {
         guard
-            let client: any HTTPClientInterface = engine.resolve((any HTTPClientInterface).self),
-            let container: any PersistentContainerInterface = engine.resolve((any PersistentContainerInterface).self),
-            let logger: any LoggerInterface = engine.resolve((any LoggerInterface).self)
+            let client: HTTPClientInterface = engine.resolve(HTTPClientInterface.self),
+            let container: PersistentContainerInterface = engine.resolve(PersistentContainerInterface.self),
+            let logger: LoggerInterface = engine.resolve(LoggerInterface.self)
         else {
             fatalError("Register a logger, NetworkingKit and the persistent container before ProductRepository")
         }
@@ -21,8 +21,8 @@ public enum ProductRepositoryDependencyRegistration {
         engine.register(
             value: ProductRepository(
                 client: client, container: container, baseURL: baseURL, logger: logger, timeToLive: timeToLive
-            ) as any ProductRepositoryInterface,
-            for: (any ProductRepositoryInterface).self
+            ) as ProductRepositoryInterface,
+            for: ProductRepositoryInterface.self
         )
     }
 }

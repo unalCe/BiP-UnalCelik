@@ -3,7 +3,6 @@ import CommonKit
 import CommonUI
 import ImageCacheKit
 import LayoutKit
-import ProductListInterface
 import ProductListMVVM
 import UIKit
 
@@ -15,7 +14,7 @@ public final class ProductListViewController: UIViewController {
     private typealias DataSource = UICollectionViewDiffableDataSource<Section, String>
 
     private let viewModel: ProductListViewModel
-    private let imagePrefetcher: any ImagePrefetchingInterface
+    private let imagePrefetcher: ImagePrefetchingInterface
     private var cancellables = Set<AnyCancellable>()
 
     private var itemsByID: [String: ProductDisplayModel] = [:]
@@ -59,8 +58,8 @@ public final class ProductListViewController: UIViewController {
     }
 
     public init(viewModel: ProductListViewModel,
-                imageLoader: any ImageLoaderInterface,
-                imagePrefetcher: any ImagePrefetchingInterface) {
+                imageLoader: ImageLoaderInterface,
+                imagePrefetcher: ImagePrefetchingInterface) {
         self.viewModel = viewModel
         self.imagePrefetcher = imagePrefetcher
         self.cellRegistration = UICollectionView.CellRegistration { cell, _, item in
@@ -111,7 +110,7 @@ public final class ProductListViewController: UIViewController {
         case .empty:
             stateView.showMessage(AppStrings.ProductList.emptyTitle, retryable: true)
         case .failed(let error):
-            stateView.showMessage("\(error.title)\n\(error.message)", retryable: error.isRetryable)
+            stateView.showMessage("\(error.title)\n\(error.message)", retryable: true)
         }
     }
 
@@ -163,7 +162,7 @@ extension ProductListViewController: UICollectionViewDataSourcePrefetching {
     }
 
     private func imageRequests(for indexPaths: [IndexPath]) -> [ImageRequest] {
-        let pointSize = ProductListMetrics.itemWidth(in: collectionView.bounds.width)
+        let pointSize = ProductListLayout.itemWidth(in: collectionView.bounds.width)
 
         return indexPaths.compactMap { indexPath in
             guard

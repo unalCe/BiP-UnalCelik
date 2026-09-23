@@ -12,17 +12,17 @@ final class ProductRepositoryDependencyRegistrationTests: XCTestCase {
     func test_registeredRepository_usesTheGivenBaseURLAndTimeToLive() async throws {
         let engine = DependencyEngine()
         let client = MockHTTPClient(always: .ok(HTTPFixtures.productList))
-        engine.register(value: client as any HTTPClientInterface, for: (any HTTPClientInterface).self)
-        let container: any PersistentContainerInterface = try makeTestContainer()
-        engine.register(value: container, for: (any PersistentContainerInterface).self)
-        engine.register(value: SpyLogger() as any LoggerInterface, for: (any LoggerInterface).self)
+        engine.register(value: client as HTTPClientInterface, for: HTTPClientInterface.self)
+        let container: PersistentContainerInterface = try makeTestContainer()
+        engine.register(value: container, for: PersistentContainerInterface.self)
+        engine.register(value: SpyLogger() as LoggerInterface, for: LoggerInterface.self)
 
         ProductRepositoryDependencyRegistration.register(
             to: engine,
             baseURL: URL(string: "https://example.org/elsewhere/")!,
             timeToLive: 0
         )
-        let sut: (any ProductRepositoryInterface)? = engine.resolve((any ProductRepositoryInterface).self)
+        let sut: ProductRepositoryInterface? = engine.resolve(ProductRepositoryInterface.self)
         _ = try await sut?.products()
         _ = try await sut?.products()
 

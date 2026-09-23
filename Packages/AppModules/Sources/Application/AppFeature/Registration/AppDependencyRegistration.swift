@@ -16,10 +16,10 @@ public enum AppDependencyRegistration {
     public static func register(
         to engine: DependencyEngine,
         inMemory: Bool = false,
-        logger: any LoggerInterface = OSLogger(),
+        logger: LoggerInterface = OSLogger(),
         configuration: AppConfiguration = .default
     ) {
-        engine.register(value: logger, for: (any LoggerInterface).self)
+        engine.register(value: logger, for: LoggerInterface.self)
 
         let registrations: [(DependencyEngine) -> Void] = [
             { NetworkingKitDependencyRegistration.register(to: $0, cache: configuration.urlCache) },
@@ -38,7 +38,7 @@ public enum AppDependencyRegistration {
     private static func registerPersistentContainer(
         to engine: DependencyEngine,
         inMemory: Bool,
-        logger: any LoggerInterface
+        logger: LoggerInterface
     ) {
         let name = ProductDataModel.name
         let bundle = ProductDataModel.bundle
@@ -51,7 +51,7 @@ public enum AppDependencyRegistration {
         let container = loader.load()
         engine.register(
             value: container,
-            for: (any PersistentContainerInterface).self
+            for: PersistentContainerInterface.self
         )
     }
 }

@@ -15,15 +15,15 @@ final class MoneyFormatterTests: XCTestCase {
 }
 
 final class ErrorPresenterTests: XCTestCase {
-    func test_notFound_isNotRetryable() {
-        let display = ErrorPresenter().display(for: DomainError.notFound)
+    func test_serverError_showsTheBackendsMessage() {
+        let display = ErrorPresenter().display(for: DomainError.server(message: "Access Denied"))
 
-        XCTAssertEqual(display.title, "Product not found")
-        XCTAssertFalse(display.isRetryable)
+        XCTAssertEqual(display.title, "Something went wrong")
+        XCTAssertEqual(display.message, "Access Denied")
     }
 
-    func test_offline_isRetryable() {
-        XCTAssertTrue(ErrorPresenter().display(for: DomainError.offline).isRetryable)
+    func test_offline_explainsTheConnection() {
+        XCTAssertEqual(ErrorPresenter().display(for: DomainError.offline).title, "You're offline")
     }
 
     func test_unrecognisedError_fallsBackToGeneric() {
@@ -31,7 +31,7 @@ final class ErrorPresenterTests: XCTestCase {
         let display = ErrorPresenter().display(for: Weird())
 
         XCTAssertEqual(display.title, "Something went wrong")
-        XCTAssertTrue(display.isRetryable)
+        XCTAssertEqual(display.message, "Please try again.")
     }
 }
 
@@ -67,7 +67,6 @@ final class AppStringsTests: XCTestCase {
     func test_noStringFallsBackToItsKey() {
         let all = [
             AppStrings.Common.tryAgain, AppStrings.Common.imageUnavailable,
-            AppStrings.Error.notFoundTitle, AppStrings.Error.notFoundMessage,
             AppStrings.Error.offlineTitle, AppStrings.Error.offlineMessage,
             AppStrings.Error.invalidDataTitle, AppStrings.Error.invalidDataMessage,
             AppStrings.Error.genericTitle, AppStrings.Error.genericMessage,

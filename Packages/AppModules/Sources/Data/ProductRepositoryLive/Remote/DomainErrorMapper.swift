@@ -7,43 +7,39 @@ import ProductDomain
 /// `DomainError` stays free of infrastructure types, so whatever it cannot
 /// carry is logged here, at the one place it is thrown away.
 struct DomainErrorMapper {
-    private let logger: any LoggerInterface
+    private let logger: LoggerInterface
 
-    init(logger: any LoggerInterface) {
+    init(logger: LoggerInterface) {
         self.logger = logger
     }
 
-    func map(_ error: any Error, for endpoint: ProductEndpoint) -> DomainError {
+    func map(_ error: Error) -> DomainError {
         switch error {
         case let error as DomainError:
             return error
         case let error as NetworkError:
-            return map(error, for: endpoint)
+            return map(error)
         case is PersistenceError:
-            logger.error("\(endpoint) persistence failure surfaced as .unknown: \(error)", category: .persistence)
+            logger.error("persistence failure surfaced as .unknown: \(error)", category: .persistence)
             return .unknown
         default:
-            logger.error("\(endpoint) unexpected failure surfaced as .unknown: \(error)", category: .networking)
+            logger.error("unexpected failure surfaced as .unknown: \(error)", category: .networking)
             return .unknown
         }
     }
 
-    private func map(_ error: NetworkError, for endpoint: ProductEndpoint) -> DomainError {
+    // the backend's own words are shown as they are; no status code is given
+    // a meaning of ours
+    private func map(_ error: NetworkError) -> DomainError {
         switch error {
-        // 403 is not a typo — the bucket denies listing, so unknown ids come
-        // back AccessDenied. Only a request that names a product can be told
-        // "not found"; on the list the same code is an access failure.
-        case .unacceptableStatus(let code, _) where code == 403 || code == 404:
-            if endpoint.namesOneProduct { return .notFound }
-            logger.error("\(endpoint) was refused with \(code)", category: .networking)
-            return .unknown
-        case .unacceptableStatus(let code, _):
-            logger.error("\(endpoint) failed with \(code)", category: .networking)
-            return .unknown
+        case .unacceptableStatus(let code, let body):
+            logger.error("request failed with \(code)", category: .networking)
+            guard let message = ServerErrorMessage.extract(from: body) else { return .unknown }
+            return .server(message: message)
         case .transport where error.isOffline:
             return .offline
         case .transport, .invalidResponse, .invalidURL:
-            logger.error("\(endpoint) failed: \(error)", category: .networking)
+            logger.error("request failed: \(error)", category: .networking)
             return .unknown
         }
     }

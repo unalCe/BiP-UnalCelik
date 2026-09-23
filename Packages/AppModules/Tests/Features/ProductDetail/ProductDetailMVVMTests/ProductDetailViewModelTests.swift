@@ -24,11 +24,11 @@ final class ProductDetailViewModelTests: XCTestCase {
         XCTAssertEqual(sut.state.value?.description, "An apple a day keeps the doctor away.")
     }
 
-    func test_notFound_surfacesNonRetryableError() async {
+    func test_serverError_surfacesTheBackendsMessage() async {
         let sut = ProductDetailViewModel(
             productID: "999",
             fetchDetail: FetchProductDetail(
-                repository: StubProductRepository(detail: .failure(DomainError.notFound))
+                repository: StubProductRepository(detail: .failure(DomainError.server(message: "Access Denied")))
             )
         )
 
@@ -38,8 +38,7 @@ final class ProductDetailViewModelTests: XCTestCase {
         guard case .failed(let error) = sut.state else {
             return XCTFail("expected failure, got \(sut.state)")
         }
-        XCTAssertEqual(error.title, "Product not found")
-        XCTAssertFalse(error.isRetryable)
+        XCTAssertEqual(error.message, "Access Denied")
     }
 
     func test_requestsTheIDItWasGiven() async {

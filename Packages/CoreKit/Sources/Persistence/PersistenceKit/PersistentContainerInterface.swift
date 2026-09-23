@@ -14,7 +14,7 @@ public protocol PersistentContainerInterface: Sendable {
 public enum PersistenceError: Error, Sendable {
     case modelNotFound(name: String)
     case entityNotFound(name: String)
-    case storeUnavailable(any Error)
-    case readFailed(any Error)
-    case writeFailed(any Error)
+    case storeUnavailable(Error)
+    case readFailed(Error)
+    case writeFailed(Error)
 }

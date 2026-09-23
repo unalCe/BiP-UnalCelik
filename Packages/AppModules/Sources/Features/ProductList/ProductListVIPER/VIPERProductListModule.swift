@@ -4,9 +4,9 @@ import UIKit
 
 @MainActor
 public struct VIPERProductListModule: ProductListInterface {
-    private let fetchProducts: any FetchProductsUseCase
+    private let fetchProducts: FetchProductsUseCase
 
-    public init(fetchProducts: any FetchProductsUseCase) {
+    public init(fetchProducts: FetchProductsUseCase) {
         self.fetchProducts = fetchProducts
     }
 

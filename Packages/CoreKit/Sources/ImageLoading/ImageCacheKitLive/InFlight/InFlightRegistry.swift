@@ -2,7 +2,7 @@ import ImageCacheKit
 import UIKit
 
 actor InFlightRegistry {
-    private var tasks: [ImageRequest: Task<UIImage, any Error>] = [:]
+    private var tasks: [ImageRequest: Task<UIImage, Error>] = [:]
 
     func image(
         for request: ImageRequest,

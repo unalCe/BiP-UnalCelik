@@ -12,13 +12,13 @@ public struct CachedImage: View {
     }
 
     private let url: URL?
-    private let loader: any ImageLoaderInterface
+    private let loader: ImageLoaderInterface
 
     @Environment(\.displayScale) private var displayScale
     @State private var phase: Phase = .loading
     @State private var requestedURL: URL?
 
-    public init(url: URL?, loader: any ImageLoaderInterface) {
+    public init(url: URL?, loader: ImageLoaderInterface) {
         self.url = url
         self.loader = loader
     }

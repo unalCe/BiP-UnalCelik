@@ -1,7 +1,6 @@
 import CommonKit
 import ImageCacheKit
 import ImageCacheKitMocks
-import ProductDetailInterface
 import ProductDetailMVVM
 import ProductDetailMVVMUIKit
 import ProductDomain
@@ -62,7 +61,7 @@ final class ProductDetailViewControllerTests: XCTestCase {
         let titleFrame = title.convert(title.bounds, to: sut.view)
         let priceFrame = price.convert(price.bounds, to: sut.view)
 
-        let inset = ProductDetailMetrics.horizontalInset
+        let inset: CGFloat = 16
         XCTAssertEqual(titleFrame.minX, inset, accuracy: 0.5, "title pinned to the leading margin")
         XCTAssertEqual(priceFrame.maxX, screen.width - inset, accuracy: 0.5,
                        "price pinned to the trailing margin")
@@ -120,7 +119,7 @@ final class ProductDetailViewControllerTests: XCTestCase {
     // MARK: - Helpers
 
     private func makeSUT(
-        detail: Result<Product, any Error> = .success(
+        detail: Result<Product, Error> = .success(
             Product.fixture(id: "1", name: "Apples",
                             description: "An apple a day keeps the doctor away.")
         ),

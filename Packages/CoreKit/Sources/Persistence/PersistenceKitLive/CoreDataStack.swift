@@ -23,7 +23,7 @@ public final class CoreDataStack: PersistentContainerInterface, @unchecked Senda
             ]
         }
 
-        var loadError: (any Error)?
+        var loadError: Error?
         container.loadPersistentStores { _, error in loadError = error }
         if let loadError { throw PersistenceError.storeUnavailable(loadError) }
 

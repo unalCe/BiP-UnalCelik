@@ -1,18 +1,28 @@
 import CommonKit
 import CommonUI
 import ImageCacheKit
-import ProductDetailInterface
 import ProductDetailMVVM
 import SwiftUI
 
+private enum Metrics {
+    static let imageAspectRatio: CGFloat = 1
+    /// Scaled with Dynamic Type relative to `.title2`.
+    static let titleFontSize: CGFloat = 22
+    static let horizontalInset: CGFloat = 16
+    static let imageSpacing: CGFloat = 16
+    /// Between the title and the price, and between them and the description.
+    static let textSpacing: CGFloat = 12
+    static let bottomInset: CGFloat = 24
+}
+
 public struct ProductDetailView: View {
     @ObservedObject private var viewModel: ProductDetailViewModel
-    private let imageLoader: any ImageLoaderInterface
+    private let imageLoader: ImageLoaderInterface
 
-    @ScaledMetric(relativeTo: .title2) private var titleFontSize = ProductDetailMetrics.titleFontSize
+    @ScaledMetric(relativeTo: .title2) private var titleFontSize = Metrics.titleFontSize
 
     public init(viewModel: ProductDetailViewModel,
-                imageLoader: any ImageLoaderInterface) {
+                imageLoader: ImageLoaderInterface) {
         self.viewModel = viewModel
         self.imageLoader = imageLoader
     }
@@ -30,13 +40,13 @@ public struct ProductDetailView: View {
             ProgressView()
         case .loaded(let item):
             ScrollView {
-                VStack(alignment: .leading, spacing: ProductDetailMetrics.imageSpacing) {
+                VStack(alignment: .leading, spacing: Metrics.imageSpacing) {
                     Color.clear
-                        .aspectRatio(ProductDetailMetrics.imageAspectRatio, contentMode: .fit)
+                        .aspectRatio(Metrics.imageAspectRatio, contentMode: .fit)
                         .overlay { CachedImage(url: item.imageURL, loader: imageLoader) }
 
-                    VStack(alignment: .leading, spacing: ProductDetailMetrics.textSpacing) {
-                        HStack(alignment: .firstTextBaseline, spacing: ProductDetailMetrics.textSpacing) {
+                    VStack(alignment: .leading, spacing: Metrics.textSpacing) {
+                        HStack(alignment: .firstTextBaseline, spacing: Metrics.textSpacing) {
                             Text(item.title).font(.system(size: titleFontSize, weight: .semibold))
                             Spacer(minLength: 0)
                             Text(item.formattedPrice)
@@ -53,8 +63,8 @@ public struct ProductDetailView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, ProductDetailMetrics.horizontalInset)
-                    .padding(.bottom, ProductDetailMetrics.bottomInset)
+                    .padding(.horizontal, Metrics.horizontalInset)
+                    .padding(.bottom, Metrics.bottomInset)
                 }
             }
         case .empty:

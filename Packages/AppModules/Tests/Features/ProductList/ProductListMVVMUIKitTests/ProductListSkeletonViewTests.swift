@@ -71,7 +71,7 @@ final class ProductListSkeletonViewTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func makeSUT(fetch: any FetchProductsUseCase) -> (ProductListViewController, UIWindow) {
+    private func makeSUT(fetch: FetchProductsUseCase) -> (ProductListViewController, UIWindow) {
         let sut = ProductListViewController(
             viewModel: ProductListViewModel(fetchProducts: fetch),
             imageLoader: MockImageLoader(),

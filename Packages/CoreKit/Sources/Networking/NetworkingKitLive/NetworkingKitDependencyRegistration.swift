@@ -19,8 +19,8 @@ public enum NetworkingKitDependencyRegistration: DependencyRegistration {
 
     public static func register(to engine: DependencyEngine, cache: URLCacheConfiguration) {
         engine.register(
-            value: URLSessionHTTPClient(session: makeSession(cache: cache)) as any HTTPClientInterface,
-            for: (any HTTPClientInterface).self
+            value: URLSessionHTTPClient(session: makeSession(cache: cache)) as HTTPClientInterface,
+            for: HTTPClientInterface.self
         )
     }
 

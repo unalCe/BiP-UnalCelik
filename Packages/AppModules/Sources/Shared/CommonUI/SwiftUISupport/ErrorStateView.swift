@@ -15,9 +15,7 @@ public struct ErrorStateView: View {
         VStack(spacing: StateLayout.spacing) {
             Text(error.title).font(.headline)
             Text(error.message).font(.subheadline).foregroundStyle(.secondary)
-            if error.isRetryable {
-                Button(AppStrings.Common.tryAgain, action: retry)
-            }
+            Button(AppStrings.Common.tryAgain, action: retry)
         }
         .multilineTextAlignment(.center)
         .padding(.horizontal, StateLayout.minimumHorizontalInset)

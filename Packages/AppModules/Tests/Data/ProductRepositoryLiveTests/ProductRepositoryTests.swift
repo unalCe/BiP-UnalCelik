@@ -121,10 +121,7 @@ final class ProductRepositoryTests: XCTestCase {
         XCTAssertEqual(client.sentRequests.count, 1)
     }
 
-    /// Flipped deliberately: 403 means "no such product" only on detail, where
-    /// S3 denies listing. On the list it is an access failure, and telling the
-    /// user a product is missing would be wrong.
-    func test_listRefused_withEmptyCache_throwsUnknownNotNotFound() async throws {
+    func test_listRefused_surfacesTheBackendsMessage() async throws {
         let sut = ProductRepository(
             client: MockHTTPClient(always: .status(403, body: HTTPFixtures.accessDenied)),
             container: try makeTestContainer(),
@@ -135,15 +132,15 @@ final class ProductRepositoryTests: XCTestCase {
 
         do {
             _ = try await sut.products()
-            XCTFail("expected unknown")
+            XCTFail("expected server error")
         } catch let error as DomainError {
-            XCTAssertEqual(error, .unknown)
+            XCTAssertEqual(error, .server(message: "Access Denied"))
         } catch {
             XCTFail("expected DomainError, got \(error)")
         }
     }
 
-    func test_detailRefused_throwsNotFound() async throws {
+    func test_detailRefused_surfacesTheBackendsMessage() async throws {
         let sut = ProductRepository(
             client: MockHTTPClient(always: .status(403, body: HTTPFixtures.accessDenied)),
             container: try makeTestContainer(),
@@ -154,9 +151,9 @@ final class ProductRepositoryTests: XCTestCase {
 
         do {
             _ = try await sut.product(id: "99")
-            XCTFail("expected notFound")
+            XCTFail("expected server error")
         } catch let error as DomainError {
-            XCTAssertEqual(error, .notFound)
+            XCTAssertEqual(error, .server(message: "Access Denied"))
         } catch {
             XCTFail("expected DomainError, got \(error)")
         }

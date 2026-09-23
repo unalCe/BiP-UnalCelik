@@ -73,30 +73,6 @@
         }
       }
     },
-    "error.notFound.message" : {
-      "comment" : "Error message under the product-not-found title",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This product is no longer available."
-          }
-        }
-      }
-    },
-    "error.notFound.title" : {
-      "comment" : "Error title: the requested product does not exist",
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Product not found"
-          }
-        }
-      }
-    },
     "error.offline.message" : {
       "comment" : "Error message under the offline title",
       "extractionState" : "manual",

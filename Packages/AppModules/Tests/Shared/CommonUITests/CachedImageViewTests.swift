@@ -22,9 +22,9 @@ private final class SlowImageLoader: ImageLoaderInterface, @unchecked Sendable {
 private final class FailingImageLoader: ImageLoaderInterface, @unchecked Sendable {
     private let lock = NSLock()
     private var attempts = 0
-    private let error: any Error
+    private let error: Error
 
-    init(error: any Error = ImageLoadingError.invalidData) { self.error = error }
+    init(error: Error = ImageLoadingError.invalidData) { self.error = error }
 
     var attemptCount: Int { lock.withLock { attempts } }
 
@@ -42,7 +42,7 @@ final class CachedImageViewTests: XCTestCase {
 
     /// In a window on purpose: a detached layer drops its animations, which
     /// makes "the sweep stopped" true for the wrong reason.
-    private func makeSUT(loader: any ImageLoaderInterface) -> CachedImageView {
+    private func makeSUT(loader: ImageLoaderInterface) -> CachedImageView {
         let sut = CachedImageView(loader: loader)
         sut.frame = CGRect(x: 0, y: 0, width: 100, height: 100)
         window = UIWindow(frame: CGRect(x: 0, y: 0, width: 100, height: 100))

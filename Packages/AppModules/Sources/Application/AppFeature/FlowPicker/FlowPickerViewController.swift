@@ -19,7 +19,7 @@ public final class FlowPickerViewController: UIViewController {
     }
 
     private let engine: DependencyEngine
-    private let logger: any LoggerInterface
+    private let logger: LoggerInterface
 
     private lazy var architectureControl: UISegmentedControl = {
         let control = UISegmentedControl(items: ArchitectureStyle.allCases.map(\.title))
@@ -57,7 +57,7 @@ public final class FlowPickerViewController: UIViewController {
         return stack
     }()
 
-    public init(engine: DependencyEngine = .shared, logger: any LoggerInterface = OSLogger()) {
+    public init(engine: DependencyEngine = .shared, logger: LoggerInterface = OSLogger()) {
         self.engine = engine
         self.logger = logger
         super.init(nibName: nil, bundle: nil)
@@ -104,8 +104,8 @@ public final class FlowPickerViewController: UIViewController {
         FlowRegistration.register(selection.style, to: engine)
 
         // a wiring bug, not a user error: loud in debug, a logged no-op in release
-        guard let module: any ProductListInterface =
-                engine.resolve((any ProductListInterface).self) else {
+        guard let module: ProductListInterface =
+                engine.resolve(ProductListInterface.self) else {
             let message = "no ProductListInterface registered for \(selection.style)"
             logger.error(message, category: .composition)
             assertionFailure(message)
