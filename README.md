@@ -1,5 +1,30 @@
 # Turkcell BiP iOS Case Study
 
+## TLDR - My shorter explanation
+Before AI generated documentation below, I wanted to explain the project with my own words.
+The dependency modularity and architecture might seem like an overkill for a two paged app, but the purpose was to demonstrate the modularity. Without a 3rd party dependency management like Tuist or Bazel etc, it's written with SPM. Each feature can be built and tested separately, therefore it speeds up the development process and also the build and testing time on CI/CD.
+
+ℹ️ The reason I've made both MVVM and VIPER is for demonstration purposes. I've worked with VIPER for the last 5 years, but the future is returning back to MVVM and as far as I've learned, your team works on MVVM. Since the app is highly modularized, dropping VIPER means deleting its folders and unwiring it from Package.swift and AppFeature. Nothing in the MVVM modules changes.
+
+Performance is frequently checked with Instruments and also with debug logs, there is a special branch named `analyze/performance-tracing` which consists needed infrastrucre for performance tracing. But it's not on the main branch. App benefits heavily from caching for performance. As you can see in tracing, there are no hangs or memory leaks.
+<img width="2164" height="1168" alt="Ekran Resmi 2026-09-24 09 57 25" src="https://github.com/user-attachments/assets/b9a60d7e-7375-4ee8-95d7-15ce3b4bc3bb" />
+
+Caching: currently the app has no paginated data, but again for demonstration, it is handling the response as the first wave of the data and storing it on CoreData. The details caching mechanism depends on the list cache, if Orange is removed from the cache when a new wave of list data appears, the detail's of orange is also removed from the CoreData.
+The images are being cached outside of the CoreData, they use a mixture of NSCacheImageCache and URLCache.
+They don't live in CoreData forever, the decision was to keep them for 10 minutes since they are not so dynamic data. The timing can be changed.
+
+| Loading | Cached Detail | List Persistence |
+|:-------:|:-------------:|:----------------:|
+| <img width="256" height="554" alt="Loading state" src="https://github.com/user-attachments/assets/9654b76c-41e9-44ff-8ab5-8bb66ac81a02"> | <img width="256" height="554" alt="Cached product detail" src="https://github.com/user-attachments/assets/d396ba12-b010-459b-9872-b1bde697422b"> | <img width="256" height="554" alt="Product list persistence" src="https://github.com/user-attachments/assets/49228ce2-1042-4245-9899-f5e6172d78a6"> |
+
+
+
+Project includes Unit and UI tests, both using XC framework. Not SwiftTest.
+
+Thanks for inspecting
+
+## Docs
+
 Product list + detail. Two local Swift packages, three presentation stacks over
 one shared Clean Architecture core. No third-party libraries.
 
