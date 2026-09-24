@@ -13,6 +13,8 @@ Caching: currently the app has no paginated data, but again for demonstration, i
 The images are being cached outside of the CoreData, they use a mixture of NSCacheImageCache and URLCache.
 They don't live in CoreData forever, the decision was to keep them for 10 minutes since they are not so dynamic data. The timing can be changed.
 
+⚠️ These flows below are tested with slow network connection on purpose. If the app will be opened unattached to the Xcode debugger and with a normal network, the build and list view will be available instantly.
+
 | Loading | Cached Detail | List Persistence |
 |:-------:|:-------------:|:----------------:|
 | <img width="256" height="554" alt="Loading state" src="https://github.com/user-attachments/assets/9654b76c-41e9-44ff-8ab5-8bb66ac81a02"> | <img width="256" height="554" alt="Cached product detail" src="https://github.com/user-attachments/assets/d396ba12-b010-459b-9872-b1bde697422b"> | <img width="256" height="554" alt="Product list persistence" src="https://github.com/user-attachments/assets/49228ce2-1042-4245-9899-f5e6172d78a6"> |
